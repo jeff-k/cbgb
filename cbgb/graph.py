@@ -1,4 +1,4 @@
-"""sliding window slices of string of length k
+"""sliding slice string of length k
 """
 def kmerize(string, k=12):
     kmers = {}
@@ -9,18 +9,18 @@ def kmerize(string, k=12):
         kmers[kmer] += 1
     return kmers
 
-"""prototypical edge type. monoid.
-"""
 class Edge:
+    """prototypical edge type. monoid.
+    """
     def __init__(self):
         pass
 
     def update(self, other):
         return False
 
-"""carrier type for labelled multigraph
-"""
 class LMG(Edge):
+    """carrier type for labelled multigraph
+    """
     def __init__(self, label=None, count=1):
         self.count = count
         if label:
@@ -32,9 +32,9 @@ class LMG(Edge):
         self.count += other.count
         self.labels = self.labels.union(other.labels)
 
-"""main character
-"""
 class CdB:
+    """main character
+    """
     def __init__(self):
         self.edges = {}
         self.nodes = set([])
