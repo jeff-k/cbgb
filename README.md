@@ -8,4 +8,4 @@ Integers for a multigraph, sets for labels
 Linear time assembly for well behaved, unlabelled de Bruijn graphs
 
 ### What's subdawg?
-Extract a partially ordered directed acyclic weighted subgraph
+Extract a directed acyclic word graph

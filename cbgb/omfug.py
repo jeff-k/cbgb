@@ -1,2 +1,35 @@
-"""phylogenetics?
-"""
+from scipy.sparse.csgraph import laplacian
+from numpy.linalg import det
+from cbgb import kmerize
+import numpy as np
+
+def perplexity4(seq, k=12):
+    """in theory the base4-perplexity should suggest the best kmer size(?)
+    """
+    kmers = {}
+    n = 0
+    for kmer in kmerize(seq, k=k):
+        if kmer not in kmers:
+            kmers[kmer] = 0
+        kmers[kmer] += 1
+        n += 1
+
+    # pow(4, -\sum_{kmer}^{kmers} p_{kmer} log_4 p_{kmer})
+    b = np.log(4)
+    dist = np.array(list(map(lambda x: (np.log((x/n))/b) * (x/n), kmers.values())))
+    return np.power(4, -1 * np.sum(dist))
+
+def ec(graph):
+    """count eulerian cycles w/ BEST theorem
+    """
+    def degree(v):
+        """row vector from adjacency graph"""
+        return sum(graph[v]) - graph[v][v]
+
+    # arborescences
+    arbors = det(laplacian(graph))
+
+    # \prod_{v \in G}(d^{+}(v)-1)!
+#    prod = np.prod([np.math.factorial(degree(v) - 1) for v in len(graph))
+
+#    return arbors * prod

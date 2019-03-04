@@ -1,13 +1,8 @@
-"""sliding slice string of length k
+"""sliding slices for strings of length k
 """
-def kmerize(string, k=12):
-    kmers = {}
-    for i in range(0, len(string) - (k - 1)):
-        kmer = string[i:i+k]
-        if kmer not in kmers:
-            kmers[kmer] = 0
-        kmers[kmer] += 1
-    return kmers
+def kmerize(seq, k=12):
+    for i in range(0, len(seq) - (k - 1)):
+        yield seq[i:i+k]
 
 class Edge:
     """prototypical edge type. monoid.
@@ -21,7 +16,7 @@ class Edge:
 class LMG(Edge):
     """carrier type for labelled multigraph
     """
-    def __init__(self, label=None, count=1):
+    def __init__(self, label=None, count=0):
         self.count = count
         if label:
             self.labels = set([label,])
@@ -31,6 +26,9 @@ class LMG(Edge):
     def update(self, other):
         self.count += other.count
         self.labels = self.labels.union(other.labels)
+
+    def __repr__(self):
+        return "<{} {}>".format(self.labels, self.count)
 
 class CdB:
     """main character
@@ -44,9 +42,13 @@ class CdB:
         self.nodes.add(left)
         self.nodes.add(right)
 
-        self.edges[(left, right)] = edge
+        if (left, right) not in self.edges:
+            self.edges[(left, right)] = LMG()
+        self.edges[(left, right)].update(edge)
 
     def walk(self):
+        """eulerian walk!
+        """
         path = [] # the path of edges
         return path
 
@@ -57,4 +59,22 @@ class CdB:
         pass
 
     def subdag(self, start, end):
+        """walk from start to end, breadth first
+        """
         pass
+
+def test(seq1, seq2):
+    g = CdB()
+    for kmer in kmerize(seq1):
+        g.add(kmer, LMG("seq1", 1))
+    for kmer in kmerize(seq2):
+        g.add(kmer, LMG("seq2", 1))
+
+    return g.edges
+
+if __name__ == "__main__":
+    g = test("ATCGACTACGACTGCTGCATCGATCGATTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTACGTACGATCGATCGATCG",
+            "ATCTACTTTTTTTTTTTTTTCGCGGCAGCGATCATCGATCGACGACGATACGATCGATCGACTCGATCGATCGACCGGGGGGGGGGGGGGGACACTCGATCGATCGATCGATCACTACGATGCATGCATGCAT")
+    for k in g:
+        print(g[k])
+    print(g)
