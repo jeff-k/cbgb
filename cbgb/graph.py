@@ -10,9 +10,13 @@ class Edge:
     """prototypical edge type. monoid.
     """
     def __init__(self, data=None):
+        """__init__() should return unit edge
+        """
         self.data = data
 
     def update(self, other):
+        """monoid operation
+        """
         pass
 
     def __repr__(self):
@@ -86,7 +90,7 @@ class CdB:
                 path.append(self.edges[(node, right)])
                 if right not in self.nodes:
                     print("broken loop; not eulerian cycle?")
-                    break # if there's a broken loop
+                    break
                 visit(right)
         visit(start)
         return path
@@ -97,7 +101,16 @@ class CdB:
     def to_adj(self):
         """dump graph as adjacency matrix
         """
-        return np.array([[]])
+        node_order = list(sorted(self.nodes.keys()))
+        rows = []
+
+        for node in self.nodes:
+            row = [0 for _ in range(0, len(node_order))]
+            for out in self.nodes[node]:
+                row[node_order.index(out)] += 1
+            rows.append(row)
+
+        return np.array(rows), node_order
 
     def to_gfa(self):
         pass
@@ -120,35 +133,3 @@ class CdB:
         for kmer in kmerize(start + end):
             self.add(kmer, Edge(data=kmer[-1]))
         pass
-
-def test(seq1, seq2):
-    g = CdB()
-    for kmer in kmerize(seq1):
-        g.add(kmer, LMG("seq1", 1))
-    for kmer in kmerize(seq2):
-        g.add(kmer, LMG("seq2", 1))
-
-    return g.edges
-
-def assemble(kmers):
-    c = CdB()
-    for kmer in kmers:
-        c.add(kmer, Edge(data=kmer[-1]))
-    return list(map(str, c.walk()))
-
-if __name__ == "__main__":
-    #g = test("ATCGACTACGACTGCTGCATCGATCGATTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTACGTACGATCGATCGATCG",
-    #        "ATCTACTTTTTTTTTTTTTTCGCGGCAGCGATCATCGATCGACGACGATACGATCGATCGACTCGATCGATCGACCGGGGGGGGGGGGGGGACACTCGATCGATCGATCGATCACTACGATGCATGCATGCAT")
-    #for k in g:
-    #    print(g[k])
-    #print(g)
-
-    c = CdB()
-    rando = "TAGTGAATCGAAGCGCGGCTTCAGAATACCGTTTTGGCTACCTGATACAAAGCCCATCGTGGTCCTCAGATATCGTGCACGTAGAGTTGCACCGCACGCATGTGGAATTAGTGGCGAAGTACGATTCCAAGACCGACGTACGATACAACTATGCGGATGTGACGAGCTTCTTTTATATGCTTCGCCCGCCGGACCGGCCT"
-    for kmer in kmerize(rando):
-        c.add(kmer, Edge(data=kmer[-1]))
-    c.subdawg(rando[:12], rando[-12:])
-    print(''.join(map(str, c.walk())))
-    print(''.join(assemble(kmerize("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"))))
-    randoloop = "TAGTGAATCGAAGCGCGGCTTCAGAATACCGTTTTGGCTACCTGATACAAAGCCCATCGTGGTCCTCAGATATCGTGCACGTAGAGTTGCACCGCACGCATGTGGAATTAGTGGCGAAGTACGATTCCAAGACCGACGTACGATACAACTATGCGGATGTGACGAGCTTCTTTTATATGCTTCGCCCGCCGGACCGGCCTTAGTGAATCGAAGCGCGGC"
-    print(''.join(assemble(kmerize(randoloop))))

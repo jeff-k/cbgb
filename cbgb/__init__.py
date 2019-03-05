@@ -1,1 +1,2 @@
-from cbgb.graph import LMG, Edge, CdB, kmerize, test
+from cbgb.graph import LMG, Edge, CdB, kmerize
+import cbgb.omfug
