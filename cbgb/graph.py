@@ -65,12 +65,12 @@ class CdB:
 
     def add(self, kmer, edge):
         left, right = kmer[:-1], kmer[1:]
-
         if left not in self.nodes:
             self.nodes[left] = []
+        if right not in self.nodes:
+            self.nodes[right] = []
 
         self.nodes[left].append(right)
-
         if (left, right) not in self.edges:
             self.edges[(left, right)] = edge
         else:
@@ -104,7 +104,7 @@ class CdB:
         node_order = list(sorted(self.nodes.keys()))
         rows = []
 
-        for node in self.nodes:
+        for node in node_order:
             row = [0 for _ in range(0, len(node_order))]
             for out in self.nodes[node]:
                 row[node_order.index(out)] += 1
@@ -114,6 +114,37 @@ class CdB:
 
     def to_gfa(self):
         pass
+
+    def circularize(self, edge=Edge()):
+        """if the graph was generated from a linear sequence there should be
+        exactly two nodes with mismatched in/out degrees. join them up.
+        """
+
+        ins = {}
+        wrong_in = []
+        wrong_out = []
+        for node in self.nodes:
+            if node not in ins:
+                ins[node] = []
+            for out in self.nodes[node]:
+                if out not in ins:
+                    ins[out] = []
+                ins[out].append(node)
+
+        for node in self.nodes:
+            if len(ins[node]) > len(self.nodes[node]):
+                wrong_out.append(node)
+            if len(ins[node]) < len(self.nodes[node]):
+                wrong_in.append(node)
+
+        # two wrongs make a right
+        if not (len(wrong_in) == 1 and len(wrong_out) == 1):
+            return
+        left, right = wrong_in[0], wrong_out[0]
+        if right not in self.nodes:
+            self.nodes[right] = []
+        self.nodes[right].append(left)
+        self.edges[(right, left)] = edge
 
     def subdawg(self, start, end):
         """walk from start to end, breadth first
@@ -128,8 +159,3 @@ class CdB:
             if right is start or left is end:
                 self.edges.pop((left, right), None)
         self.edges[(start, end)] = None
-
-        # create contrived seam
-        for kmer in kmerize(start + end):
-            self.add(kmer, Edge(data=kmer[-1]))
-        pass

@@ -19,24 +19,39 @@ def assemble(kmers):
 if __name__ == "__main__":
     g = colour("ATCGACTACGACTGCTGCATCGATCGATTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTACGTACGATCGATCGATCG",
             "ATCTACTTTTTTTTTTTTTTCGCGGCAGCGATCATCGATCGACGACGATACGATCGATCGACTCGATCGATCGACCGGGGGGGGGGGGGGGACACTCGATCGATCGATCGATCACTACGATGCATGCATGCAT")
-    for k in g:
-        print(g[k])
-    print(g)
+    #for k in g:
+    #    print(g[k])
+    #print(g)
 
     c = CdB()
     rando = "TAGTGAATCGAAGCGCGGCTTCAGAATACCGTTTTGGCTACCTGATACAAAGCCCATCGTGGTCCTCAGATATCGTGCACGTAGAGTTGCACCGCACGCATGTGGAATTAGTGGCGAAGTACGATTCCAAGACCGACGTACGATACAACTATGCGGATGTGACGAGCTTCTTTTATATGCTTCGCCCGCCGGACCGGCCT"
     for kmer in kmerize(rando):
         c.add(kmer, Edge(data=kmer[-1]))
+    c.circularize()
     c.subdawg(rando[:12], rando[-12:])
-    print(''.join(map(str, c.walk())))
-    print(''.join(assemble(kmerize("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"))))
+    #print(''.join(map(str, c.walk())))
+    #print(''.join(assemble(kmerize("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"))))
     randoloop = "TAGTGAATCGAAGCGCGGCTTCAGAATACCGTTTTGGCTACCTGATACAAAGCCCATCGTGGTCCTCAGATATCGTGCACGTAGAGTTGCACCGCACGCATGTGGAATTAGTGGCGAAGTACGATTCCAAGACCGACGTACGATACAACTATGCGGATGTGACGAGCTTCTTTTATATGCTTCGCCCGCCGGACCGGCCTTAGTGAATCGAAGCGCGGC"
     #print(''.join(assemble(kmerize(randoloop))))
 
     x = CdB()
     for kmer in kmerize("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT", k=3):
         x.add(kmer, Edge(data=kmer[-1]))
+    x.circularize()
     graph, labels = x.to_adj()
     print(graph)
     print(ec(graph))
     print(''.join(assemble(kmerize("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTt", k=3))))
+
+    t = CdB()
+    test2 = "ZABCDABEFABY"
+    print(test2)
+    for kmer in kmerize(test2, k=3):
+        t.add(kmer, Edge(data=kmer[-1]))
+    graph1, labels = t.to_adj()
+    print(graph1, labels)
+    t.circularize()
+    graph2, labels = t.to_adj()
+    print(graph2)
+    print(ec(graph2))
+    print(''.join(assemble(kmerize(test2, k=3))))
