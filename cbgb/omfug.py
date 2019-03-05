@@ -19,17 +19,17 @@ def perplexity4(seq, k=12):
     dist = np.array(list(map(lambda x: (np.log((x/n))/b) * (x/n), kmers.values())))
     return np.power(4, -1 * np.sum(dist))
 
-def ec(graph):
+def ec(adj):
     """count eulerian cycles w/ BEST theorem
     """
     def degree(v):
-        """row vector from adjacency graph"""
-        return sum(graph[v]) - graph[v][v]
+        """sum of row vector from adjacency matrix is the out degree"""
+        return sum(adj[v]) - adj[v][v]
 
-    # arborescences
-    arbors = det(laplacian(graph))
-
+    # arborescence; determinant of truncated laplacian(?)
+    arbors = det(laplacian(adj)[1:,1:])
     # \prod_{v \in G}(d^{+}(v)-1)!
-#    prod = np.prod([np.math.factorial(degree(v) - 1) for v in len(graph))
+    prod = np.prod([np.math.factorial(degree(v) - 1) for v in range(0,
+        len(adj))])
 
-#    return arbors * prod
+    return arbors * prod
