@@ -80,7 +80,7 @@ class CdB:
         """eulerian walk!
         """
         path = [] # the path of edges
-
+        node_path = []
         if start is None:
             start = list(self.nodes.keys())[0]
 
@@ -92,8 +92,10 @@ class CdB:
                     print("broken loop; not eulerian cycle?")
                     break
                 visit(right)
+            node_path.append(node)
+
         visit(start)
-        return path
+        return reversed(node_path)
 
     def compress(self):
         pass
