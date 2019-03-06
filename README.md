@@ -1,6 +1,8 @@
 # cbgb
 Coloured de Bruijn Graph Builder (& other methods for updating graph-edges)
 
+![CBGB OMGFUG](docs/cbgb.jpg)
+
 ```python3
 from cbgb.omfug import ec
 from cbgb import CdB, kmerize, Edge
