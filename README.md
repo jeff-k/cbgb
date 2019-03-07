@@ -51,4 +51,8 @@ Integers for a multigraph, sets for labels
 Linear time assembly for well behaved, unlabelled de Bruijn graphs
 
 ### What's subdawg?
-Extract a directed acyclic word graph
+Extract a directed acyclic word subgraph from between two nodes
+
+### Other methods
+  * Enumerate Eulerian cycles with BEST theorem
+  * estimate optimal k-mer sizes with entropy/perplexity

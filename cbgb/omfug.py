@@ -3,6 +3,8 @@ from numpy.linalg import det
 from cbgb import kmerize
 import numpy as np
 
+from scipy.special import gammaln
+
 def perplexity4(seq, k=12):
     """in theory the base4-perplexity should suggest the best kmer size(?)
     """
@@ -33,3 +35,13 @@ def ec(adj):
         len(adj))])
 
     return arbors * prod
+
+def lnec(adj):
+    """ln of count of eulerian cycles, for numerical stability
+    """
+    def degree(v):
+        return sum(adj[v]) - adj[v][v]
+
+    lnarbors = np.log(det(laplacian(adj)[1:,1:]))
+    sumln = np.sum([gammaln(degree(v)) for v in range(0, len(adj))])
+    return lnarbors + sumln
