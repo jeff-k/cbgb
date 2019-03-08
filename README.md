@@ -43,6 +43,7 @@ for k in range(2, 12):
 11-mer:	1.0 walks
 	 pointy bird \ o pointy-pointy \ anoint my eyes \ anointy-nointy
 ```
+![Pointy bird alignment for k=8](docs/pointybandage.png)
 
 ### Monoidal edges
 Integers for a multigraph, sets for labels
@@ -54,5 +55,5 @@ Linear time assembly for well behaved, unlabelled de Bruijn graphs
 Extract a directed acyclic word subgraph from between two nodes
 
 ### Other methods
-  * Enumerate Eulerian cycles with BEST theorem
+  * Enumerate Eulerian cycles with BEST theorem (efficiently as ln \left | L_G^* \right | + \sum_{u \in V} ln\Gamma d(u))
   * estimate optimal k-mer sizes with entropy/perplexity
