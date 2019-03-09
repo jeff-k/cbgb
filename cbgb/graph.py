@@ -98,7 +98,32 @@ class CdB:
         return reversed(node_path)
 
     def compress(self):
-        pass
+        """concatenate nodes which have outdegree of one with their neighbours
+        """
+        new = {}
+        visited = set()
+        for node in self.nodes:
+            if node in visited:
+                continue
+            visited.add(node)
+            nn = node
+            while len(self.nodes[node]) == 1:
+                nn += self.nodes[node][0][-1]
+                node = self.nodes[node][0]
+                visited.add(node)
+            new[nn] = self.nodes[node]
+
+        # proof of concept!! inefficient.
+        new_names = {}
+        for node in new:
+            for out in new[node]:
+                for name in new.keys():
+                    if out == name[:len(out)]:
+                        new_names[out] = name
+
+        for node in new:
+            new[node] = [new_names[out] for out in new[node]]
+        return new
 
     def to_adj(self):
         """dump graph as adjacency matrix
@@ -114,8 +139,22 @@ class CdB:
 
         return np.array(rows), node_order
 
-    def to_gfa(self):
-        pass
+    def to_gfa(self, gfa_file, csv_file):
+        gfa_fd = open(gfa_file, 'w')
+        csv_fd = open(csv_file, 'w')
+        o = self.compress()
+        #o = self.nodes 
+        names = list(sorted(o.keys()))
+        # every node is an alignment
+        print("H\tVN:Z:cbgb-omfug", file=gfa_fd)
+        print("Name, Label", file=csv_fd)
+        for node in o:
+            print("S\t{}\t{}".format(names.index(node), node), file=gfa_fd)
+            print("{}, \"{}\"".format(names.index(node), node), file=csv_fd)
+            for out in o[node]:
+                print("L\t{}\t+\t{}\t+\t1M".format(names.index(node),
+                    names.index(out)), file=gfa_fd)
+
 
     def circularize(self, edge=Edge()):
         """if the graph was generated from a linear sequence there should be
