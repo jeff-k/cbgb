@@ -1,6 +1,8 @@
 # cbgb
 Coloured de Bruijn Graph Builder (& other methods for updating graph-edges)
 
+This is a reference implementation for exploring graph algorithms on small genome de Bruin graph assemblies. There is no intention to support concise datastructures.
+
 ![CBGB OMGFUG](docs/cbgb.jpg)
 
 ```python3
@@ -8,42 +10,40 @@ from cbgb.omfug import ec
 from cbgb import CdB, kmerize, Edge
 
 seq = "pointy bird \ o pointy-pointy \ anoint my eyes \ anointy-nointy"
-for k in range(2, 12):
+for k in range(2, 11):
     g = CdB()
     for kmer in kmerize(seq, k=k):
         g.add(kmer, Edge())
     g.circularize()
     graph, _ = g.to_adj()
-    print("{}-mer:\t{} walks".format(k, ec(graph)))
+    print("{}-mer:\te^{} cycles".format(k, lnec(graph)))
     walk = list(g.walk(start=seq[:k-1]))
     start = walk[-1][:-1]
-    print('\t', start + ''.join([s[-1] for s in walk[:-1]]))
-
+    print('\t', start + ''.join([s[k-2] for s in walk[:-1]]))
 ```
-
+Which yields
 ```
-2-mer:	1.2772574395192978e+24 walks
+2-mer:	e^62.73851624705093 cycles
 	 pointypoinointy-noint anointyes \ ey my anty-po \ oird \ binty 
-3-mer:	464380231679999.6 walks
+3-mer:	e^33.7717247974044 cycles
 	 pointyointy-noint my eyes \ anointy \ anointy-pointy bird \ o p
-4-mer:	71663615999.99995 walks
+4-mer:	e^24.99524900805808 cycles
 	 pointyinty-noint my eyes \ anointy \ anointy-pointy bird \ o po
-5-mer:	33177599.999999985 walks
+5-mer:	e^17.317385507379875 cycles
 	 pointynty-noint my eyes \ anointy \ anointy-pointy bird \ o poi
-6-mer:	36863.999999999935 walks
+6-mer:	e^10.514990744055561 cycles
 	 pointyty-nointy \ anoint my eyes \ anointy-pointy bird \ o poin
-7-mer:	95.99999999999997 walks
+7-mer:	e^4.564348191467836 cycles
 	 pointy \ anoint my eyes \ anointyy-nointy-pointy bird \ o point
-8-mer:	3.999999999999999 walks
+8-mer:	e^1.3862943611198904 cycles
 	 pointy \ anoint my eyes \ anointy-nointy bird \ o pointy-pointy
-9-mer:	2.0 walks
+9-mer:	e^0.6931471805599453 cycles
 	 pointy bird \ o pointy-pointy \ anoint my eyes \ anointy-nointy
-10-mer:	1.0 walks
-	 pointy bird \ o pointy-pointy \ anoint my eyes \ anointy-nointy
-11-mer:	1.0 walks
+10-mer:	e^0.0 cycles
 	 pointy bird \ o pointy-pointy \ anoint my eyes \ anointy-nointy
 ```
-![Pointy bird alignment for k=8](docs/pointybandage.png)
+Using the `compress()` and `to_gfa()` methods, we can visualize the output with as a GFA file:
+![Pointy bird alignment for k=9](docs/mergedbird.png)
 
 ### Monoidal edges
 Integers for a multigraph, sets for labels
