@@ -19,7 +19,8 @@ def perplexity4(seq, k=12):
     # pow(4, -\sum_{kmer}^{kmers} p_{kmer} log_4 p_{kmer})
     b = np.log(4)
     dist = np.array(list(map(lambda x: (np.log((x/n))/b) * (x/n), kmers.values())))
-    return np.power(4, -1 * np.sum(dist))
+    return -1 * np.sum(dist)
+#    return np.power(4, -1 * np.sum(dist))
 
 def ec(adj):
     """count eulerian cycles w/ BEST theorem

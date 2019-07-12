@@ -62,6 +62,7 @@ class CdB:
     def __init__(self):
         self.edges = {}
         self.nodes = {}
+        self.colours = {}
 
     def add(self, kmer, edge):
         left, right = kmer[:-1], kmer[1:]
@@ -114,15 +115,15 @@ class CdB:
             new[nn] = self.nodes[node]
 
         # proof of concept!! inefficient.
-        new_names = {}
-        for node in new:
-            for out in new[node]:
-                for name in new.keys():
-                    if out == name[:len(out)]:
-                        new_names[out] = name
+        #new_names = {}
+        #for node in new:
+        #    for out in new[node]:
+        #        for name in new.keys():
+        #            if out == name[:len(out)]:
+        #                new_names[out] = name
 
-        for node in new:
-            new[node] = [new_names[out] for out in new[node]]
+        #for node in new:
+        #    new[node] = [new_names[out] for out in new[node]]
         return new
 
     def to_adj(self):
@@ -156,11 +157,12 @@ class CdB:
                     names.index(out)), file=gfa_fd)
 
 
-    def circularize(self, edge=Edge()):
+    def circularize(self, edge=None):
         """if the graph was generated from a linear sequence there should be
         exactly two nodes with mismatched in/out degrees. join them up.
         """
-
+        if edge is None:
+            edge = Edge()
         ins = {}
         wrong_in = []
         wrong_out = []
@@ -182,10 +184,14 @@ class CdB:
         if not (len(wrong_in) == 1 and len(wrong_out) == 1):
             return
         left, right = wrong_in[0], wrong_out[0]
+        # what if we add a special start symbol instead
+
         if right not in self.nodes:
             self.nodes[right] = []
-        self.nodes[right].append(left)
-        self.edges[(right, left)] = edge
+        self.nodes[right].append("$")
+        self.nodes["$"] = [left]
+        self.edges[(right, "$")] = Edge() # is start the unit edge?
+        self.edges[("$", left)] = Edge()
 
     def subdawg(self, start, end):
         """walk from start to end, breadth first
@@ -200,3 +206,18 @@ class CdB:
             if right is start or left is end:
                 self.edges.pop((left, right), None)
         self.edges[(start, end)] = None
+
+    def path_divergence(self, other):
+        pass
+
+    def colourize(self, colour):
+        pass
+
+def colourUnion(g1, g2):
+    g = CdB()
+    for k in g1.nodes:
+        g.add(k, LMG(label='red'))
+    for k in g2.nodes:
+        g.add(k, LMG(label='blue'))
+
+    return g
