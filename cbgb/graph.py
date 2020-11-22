@@ -53,6 +53,12 @@ class LMG:
         return f"<{s}>"
 
 
+def label(graph, colour):
+    """colour all edges of a graph the same way
+    """
+    map(lambda e: LMG(e, label=colour), graph.nodes.values)
+
+
 class CdB:
     """main character
     """
@@ -97,9 +103,10 @@ class CdB:
         return reversed(node_path)
 
     def compress(self):
-        """concatenate nodes which have outdegree of one with their neighbours
+        """concatenate nodes which have outdegree of one with their neighbours,
+        yielding a genome reference graph
         """
-        new = {}
+        new = GenGraph()
         visited = set()
         for node in self.nodes:
             if node in visited:
@@ -127,19 +134,6 @@ class CdB:
             rows.append(row)
 
         return np.array(rows), node_order
-
-    def to_gfa(self, gfa_fd, csv_fd=None):
-        o = self.compress()
-        names = list(sorted(o.keys()))
-        # every node is an alignment
-        print("H\tVN:Z:cbgb-omfug", file=gfa_fd)
-        print("Name, Label", file=csv_fd)
-        for node in o:
-            print(f"S\t{names.index(node)}\t{node}", file=gfa_fd)
-            print(f'{names.index(node)}, "{node}"', file=csv_fd)
-            for out in o[node]:
-                print(f"L\t{names.index(node)}\t+\t{names.index(out)}\t+\t1M",
-                        file=gfa_fd)
 
     def to_dot(self):
         dot = ['digraph G {']
@@ -191,7 +185,7 @@ class CdB:
 
         idea: remove all in-edges to start and out edges from end, add edges
         between start and end with the correct degree. Start walk from start to
-        end. Use it to contruct partial order alignments from
+        end. Use it to contruct partial order alignments
         """
 
         # remove nodes entering start and leaving end
@@ -203,7 +197,39 @@ class CdB:
     def path_divergence(self, other):
         pass
 
-def label(graph, colour):
-    """colour all edges of a graph the same way
+class GenGraph:
+    """genome reference graph
     """
-    map(lambda e: LMG(e, label=colour), graph.nodes.values)
+    def __init__(self):
+        self.nodes = {}
+        self.labels = {}
+
+    def to_gfa(self, gfa_fd=None):
+        names = list(sorted(self.nodes))
+
+        # every node is an alignment
+        print("H\tVN:Z:cbgb-omfug", file=gfa_fd)
+        for node in self.nodes:
+            print(f"S\t{names.index(node)}\t{node}", file=gfa_fd)
+            for out in self.nodes[node]:
+                print(f"L\t{names.index(node)}\t+\t{names.index(out)}\t+\t1M",
+                        file=gfa_fd)
+
+    def gfa_csv(self, csv_fd=None):
+        print("Name, Label", file=csv_fd)
+        for node in self.nodes:
+            print(f'{names.index(node)}, "{node}"', file=csv_fd)
+
+    def to_dot(self):
+        dot = ['digraph G {']
+        for v in self.nodes:
+            for e in self.nodes[v]:
+                n = v[1:] + e
+                dot.append(f'  "{v}" -> "{n}" [label="{e}"];')
+        dot.append('}')
+        return '\n'.join(dot)
+
+    def kmers(self):
+        """return kmers of a compressed dBG
+        """
+        return []
