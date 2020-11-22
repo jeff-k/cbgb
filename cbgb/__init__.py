@@ -1,2 +1,2 @@
-from cbgb.graph import LMG, Edge, CdB, kmerize, colourUnion
+from cbgb.graph import LMG, Edge, CdB, kmerise, colourUnion
 import cbgb.omfug

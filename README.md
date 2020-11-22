@@ -35,7 +35,7 @@ Which yields
 9-mer:	pointy bird \ o pointy-pointy \ anoint my eyes \ anointy-nointy
 ``` 
 
-If we're interesting in enumerating the number of possible Eulerian cycles
+If we're interested in enumerating the number of possible Eulerian cycles
 for k,
 
 ```python
@@ -63,7 +63,7 @@ Giving:
 10-mer:	e^0.0 cycles
 ```
 
-Using the `compress()` and `to_gfa()` methods, we can visualize the output
+Using the `compress()` and `to_gfa()` methods, we can visualise the output
 with as a GFA file: ![Pointy bird alignment for k=9](docs/mergedbird.png)
 
 ### Monoidal edges
@@ -76,5 +76,5 @@ Linear time assembly for well behaved, unlabelled de Bruijn graphs
 Extract a directed acyclic word subgraph from between two nodes
 
 ### Other methods
-  * Enumerate Eulerian cycles with BEST theorem (efficiently as ln \left | L_G^* \right | + \sum_{u \in V} ln\Gamma d(u))
+  * Enumerate Eulerian cycles with BEST theorem [docs/enumerate_cycles.ipynb]
   * estimate optimal k-mer sizes with entropy/perplexity

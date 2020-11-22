@@ -2,7 +2,7 @@ import numpy as np
 
 """sliding slices for strings of length k
 """
-def kmerize(seq, k=12):
+def kmerise(seq, k=12):
     for i in range(0, len(seq) - (k - 1)):
         yield seq[i:i+k]
 
@@ -156,6 +156,14 @@ class CdB:
                 print("L\t{}\t+\t{}\t+\t1M".format(names.index(node),
                     names.index(out)), file=gfa_fd)
 
+    def to_dot(self):
+        gv = ['digraph G {']
+        for v in self.nodes:
+            for e in self.nodes[v]:
+                n = v[1:] + e
+                gv.append(f'  "{v}" -> "{n}" [label="{e}"];')
+        gv.append('}')
+        return '\n'.join(gv)
 
     def circularize(self, edge=None):
         """if the graph was generated from a linear sequence there should be

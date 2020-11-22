@@ -1,6 +1,6 @@
 from scipy.sparse.csgraph import laplacian
 from numpy.linalg import det
-from cbgb import kmerize
+from cbgb import kmerise
 import numpy as np
 
 from scipy.special import gammaln
@@ -10,7 +10,7 @@ def perplexity4(seq, k=12):
     """
     kmers = {}
     n = 0
-    for kmer in kmerize(seq, k=k):
+    for kmer in kmerise(seq, k=k):
         if kmer not in kmers:
             kmers[kmer] = 0
         kmers[kmer] += 1

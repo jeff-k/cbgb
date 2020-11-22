@@ -55,3 +55,5 @@ if __name__ == "__main__":
     print(graph2)
     print(ec(graph2))
     print(''.join(assemble(kmerize(test2, k=3))))
+
+    print(x.to_dot())
