@@ -9,7 +9,7 @@ succinct datastructures.
 
 ```python3
 from cbgb.omfug import lnec
-from cbgb import CdB, kmerize, Edge
+from cbgb import CdB, kmerise
 
 seq = "pointy bird \ o pointy-pointy \ anoint my eyes \ anointy-nointy"
 
@@ -17,9 +17,7 @@ def join_walk(walk):
     return ''.join(map(lambda c: c[-1:], walk))
 
 for k in range(4, 10):
-    g = CdB()
-    for kmer in kmerize(seq, k=k):
-        g.add(kmer, Edge())
+    g = CdB(kmerise(seq, k=k)
 
     start = seq[:k-1]
     walk = join_walk(g.walk(start=start))
@@ -40,13 +38,10 @@ for k,
 
 ```python
 for k in range(2, 11):
-    g = CdB()
-    for kmer in kmerize(seq, k=k):
-        g.add(kmer, Edge())
-
+    g = CdB(kmerise(seq, k=k)):
     g.circularize()
     graph, _ = g.to_adj()
-    print("{}-mer:\te^{} cycles".format(k, lnec(graph)))
+    print(f"{k}-mer:\te^{lnec(graph)} cycles")
 ```
 
 Giving:
@@ -63,11 +58,10 @@ Giving:
 10-mer:	e^0.0 cycles
 ```
 
-Using the `compress()` and `to_gfa()` methods, we can visualise the output
-with as a GFA file: ![Pointy bird alignment for k=9](docs/mergedbird.png)
+Using the `compress()` and `to_gfa()` methods, we can visualise the output as a GFA file: ![Pointy bird alignment for k=9](docs/mergedbird.png)
 
 ### Monoidal edges
-Integers for a multigraph, sets for labels
+Integers for a multigraphs, sets for labels, dictionaries for labelled multigraphs
 
 ### Eulerian walk
 Linear time assembly for well behaved, unlabelled de Bruijn graphs
@@ -76,5 +70,5 @@ Linear time assembly for well behaved, unlabelled de Bruijn graphs
 Extract a directed acyclic word subgraph from between two nodes
 
 ### Other methods
-  * Enumerate Eulerian cycles with BEST theorem [docs/enumerate_cycles.ipynb]
-  * estimate optimal k-mer sizes with entropy/perplexity
+  * Enumerate Eulerian cycles with BEST theorem: [docs/enumerate_cycles.ipynb](docs/enumerate_cycles.ipynb)
+  * Estimate optimal k-mer sizes with entropy/perplexity

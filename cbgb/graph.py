@@ -7,62 +7,60 @@ def kmerise(seq, k=12):
         yield seq[i:i+k]
 
 class Edge:
-    """prototypical edge type. monoid.
+    """example of monoidal edge; must implement addition and unit
     """
     def __init__(self, data=None):
         """__init__() should return unit edge
         """
         self.data = data
+        self.value = 1
 
-    def update(self, other):
+    def __add__(self, other):
         """monoid operation
         """
-        pass
+        data = None
+        if self.data:
+            data = self.data
+        elif other.data:
+            data = self.data
+
+        e = Edge(data=data)
+        e.value = self.value + other.value
+        return e
 
     def __repr__(self):
         if self.data is not None:
-            return "{}".format(self.data)
-        return "<Edge>"
+            return f"<{self.data}: {self.value}>"
+        return self.value
 
 
-class Multiedge(Edge):
-    """weighted edge for a multigraph
+class LMG:
+    """labelled multigraph (coloured edges)
     """
     def __init__(self):
-        self.count = 1
+        self.counts = {}
 
-    def update(self, other):
-        self.count += other.count
-
-    def __repr__(self):
-        return "<Edge: {}>".format(self.count)
-
-
-class LMG(Edge):
-    """carrier type for labelled multigraph
-    """
-    def __init__(self, label=None, count=0):
-        self.count = count
-        if label:
-            self.labels = set([label,])
-        else:
-            self.labels = set([])
-
-    def update(self, other):
-        self.count += other.count
-        self.labels = self.labels.union(other.labels)
+    def __add__(self, other):
+        for k in other.counts:
+            if k in self.counts:
+                self.counts[k] += other.counts[k]
+            else:
+                self.counts[k] = other.counts[k]
+        return self
 
     def __repr__(self):
-        return "<{} {}>".format(self.labels, self.count)
+        s = ', '.join(["f{k}: {self.counts[k]}" for k in self.counts])
+        return f"<{s}>"
 
 
 class CdB:
     """main character
     """
-    def __init__(self):
-        self.edges = {}
+    def __init__(self, kmers=None):
         self.nodes = {}
-        self.colours = {}
+
+        if kmers:
+            map(self.add, kmers)
 
     def add(self, kmer, edge):
         left, right = kmer[:-1], kmer[1:]
@@ -114,16 +112,6 @@ class CdB:
                 visited.add(node)
             new[nn] = self.nodes[node]
 
-        # proof of concept!! inefficient.
-        #new_names = {}
-        #for node in new:
-        #    for out in new[node]:
-        #        for name in new.keys():
-        #            if out == name[:len(out)]:
-        #                new_names[out] = name
-
-        #for node in new:
-        #    new[node] = [new_names[out] for out in new[node]]
         return new
 
     def to_adj(self):
@@ -140,37 +128,34 @@ class CdB:
 
         return np.array(rows), node_order
 
-    def to_gfa(self, gfa_file, csv_file):
-        gfa_fd = open(gfa_file, 'w')
-        csv_fd = open(csv_file, 'w')
+    def to_gfa(self, gfa_fd, csv_fd=None):
         o = self.compress()
-        #o = self.nodes 
         names = list(sorted(o.keys()))
         # every node is an alignment
         print("H\tVN:Z:cbgb-omfug", file=gfa_fd)
         print("Name, Label", file=csv_fd)
         for node in o:
-            print("S\t{}\t{}".format(names.index(node), node), file=gfa_fd)
-            print("{}, \"{}\"".format(names.index(node), node), file=csv_fd)
+            print(f"S\t{names.index(node)}\t{node}", file=gfa_fd)
+            print(f'{names.index(node)}, "{node}"', file=csv_fd)
             for out in o[node]:
-                print("L\t{}\t+\t{}\t+\t1M".format(names.index(node),
-                    names.index(out)), file=gfa_fd)
+                print(f"L\t{names.index(node)}\t+\t{names.index(out)}\t+\t1M",
+                        file=gfa_fd)
 
     def to_dot(self):
-        gv = ['digraph G {']
+        dot = ['digraph G {']
         for v in self.nodes:
             for e in self.nodes[v]:
                 n = v[1:] + e
-                gv.append(f'  "{v}" -> "{n}" [label="{e}"];')
-        gv.append('}')
-        return '\n'.join(gv)
+                dot.append(f'  "{v}" -> "{n}" [label="{e}"];')
+        dot.append('}')
+        return '\n'.join(dot)
 
-    def circularize(self, edge=None):
+    def circularise(self, edge=None):
         """if the graph was generated from a linear sequence there should be
-        exactly two nodes with mismatched in/out degrees. join them up.
+        two riversides in your city with an odd number of bridges. join them up.
         """
         if edge is None:
-            edge = Edge()
+            edge = 1
         ins = {}
         wrong_in = []
         wrong_out = []
@@ -218,14 +203,7 @@ class CdB:
     def path_divergence(self, other):
         pass
 
-    def colourize(self, colour):
-        pass
-
-def colourUnion(g1, g2):
-    g = CdB()
-    for k in g1.nodes:
-        g.add(k, LMG(label='red'))
-    for k in g2.nodes:
-        g.add(k, LMG(label='blue'))
-
-    return g
+def label(graph, colour):
+    """colour all edges of a graph the same way
+    """
+    map(lambda e: LMG(e, label=colour), graph.nodes.values)

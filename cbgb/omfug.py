@@ -1,9 +1,11 @@
-from scipy.sparse.csgraph import laplacian
-from numpy.linalg import det
-from cbgb import kmerise
+"""information theoretic and graph operations on de Bruijn graphs
+"""
 import numpy as np
+from numpy.linalg import det
 
+from scipy.sparse.csgraph import laplacian
 from scipy.special import gammaln
+from cbgb import kmerise
 
 def perplexity4(seq, k=12):
     """in theory the base4-perplexity should suggest the best kmer size(?)
