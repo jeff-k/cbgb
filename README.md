@@ -1,7 +1,7 @@
 # cbgb
 Coloured de Bruijn Graph Builder (& other methods for updating graph-edges)
 
-This is a reference implementation for exploring graph algorithms on small
+This is a reference implementation for experimenting with graph algorithms on small
 genome de Bruin graph assemblies. There is no intention to support
 succinct datastructures.
 
@@ -32,16 +32,13 @@ Which yields
 8-mer:	pointy bird \ o pointy-pointy \ anoint my eyes \ anointy-nointy
 9-mer:	pointy bird \ o pointy-pointy \ anoint my eyes \ anointy-nointy
 ``` 
-
 If we're interested in enumerating the number of possible Eulerian cycles
 for k,
-
 ```python
 for k in range(2, 11):
     g = CdB(kmerise(seq, k=k)):
     g.circularize()
-    graph, _ = g.to_adj()
-    print(f"{k}-mer:\te^{lnec(graph)} cycles")
+    print(f"{k}-mer:\te^{lnec(g.adj())} cycles")
 ```
 
 Giving:
