@@ -1,0 +1,8 @@
+[package]
+name = "cbgb"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bio-seq = { path="../bio-seq" }
+petgraph = "0.6"

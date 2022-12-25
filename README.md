@@ -1,11 +1,14 @@
+<div class="title-block" style="text-align: center;" align="center">
+
 # cbgb
 Coloured de Bruijn Graph Builder (& other methods for updating graph-edges)
 
 This is a reference implementation for experimenting with graph algorithms on small
-genome de Bruin graph assemblies. There is no intention to support
-succinct datastructures.
+genome de Bruin graph assemblies.
 
 ![CBGB OMGFUG](docs/cbgb.jpg)
+
+</div>
 
 ```python3
 from cbgb.omfug import lnec
