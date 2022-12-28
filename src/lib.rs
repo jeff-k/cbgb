@@ -1,5 +1,3 @@
-#![feature(generic_const_exprs)]
-
 use core::hash::Hash;
 use std::cmp::Eq;
 use std::collections::HashMap;
