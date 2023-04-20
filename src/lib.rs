@@ -4,25 +4,27 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fmt::Display;
 
-use bio_seq::codec::Codec;
-use bio_seq::seq::iterators::KmerIter;
-use bio_seq::{Kmer, Seq};
-
 mod debruijn;
 
 pub trait Monoid: Eq {
-    fn zero() -> Self;
-    fn one() -> Self;
+    const zero: Self;
+    const one: Self;
     fn addm(&self, other: &Self) -> Self;
 }
 
+impl Monoid for () {
+    const zero: () = ();
+    const one: () = ();
+
+    fn addm(&self, other: &Self) -> Self {
+        ()
+    }
+}
+
 impl Monoid for usize {
-    fn zero() -> Self {
-        0
-    }
-    fn one() -> Self {
-        1
-    }
+    const zero: usize = 0;
+    const one: usize = 1;
+
     fn addm(&self, other: &Self) -> Self {
         self + other
     }
@@ -44,9 +46,6 @@ trait GenomeGraph {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use bio_seq::codec::dna::Dna;
-    use bio_seq::{dna, FromStr};
 
     #[test]
     fn fixme() {
