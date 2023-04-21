@@ -31,10 +31,9 @@ impl<A: Codec + Eq + Display + Debug, const K: usize, Edge: Monoid + Hash + Disp
         let mut kmers = HashMap::new();
         for subseq in seq.windows(K + 1) {
             let kmer: Kmer<A, K> = subseq[..K].into();
-            let out1: u8 = subseq[K].into();
-            let out: A = A::unsafe_from_bits(out1);
-            let (v, ref mut e) = kmers.entry(kmer).or_insert((out, Edge::zero));
-            *e = e.addm(&Edge::one);
+            let out: A = A::unsafe_from_bits(u8::from(&subseq[K]));
+            let (_v, ref mut e) = kmers.entry(kmer).or_insert((out, Edge::ZERO));
+            *e = e.addm(&Edge::ONE);
         }
         DeBruijn { map: kmers }
     }
@@ -45,10 +44,8 @@ impl<A: Codec + Eq + Display + Debug, const K: usize, Edge: Monoid + Hash + Disp
     }
     */
     fn dump(self) {
-        let mut i = 0;
-        for (kmer, (out, edge)) in self.map {
+        for (i, (kmer, (out, edge))) in self.map.into_iter().enumerate() {
             println!("{i}\t{kmer}\t\t{out}\t{edge}");
-            i += 1;
         }
     }
 }

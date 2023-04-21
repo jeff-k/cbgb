@@ -1,29 +1,23 @@
-use core::hash::Hash;
 use std::cmp::Eq;
-use std::collections::HashMap;
-use std::collections::HashSet;
-use std::fmt::Display;
 
 mod debruijn;
 
 pub trait Monoid: Eq {
-    const zero: Self;
-    const one: Self;
+    const ZERO: Self;
+    const ONE: Self;
     fn addm(&self, other: &Self) -> Self;
 }
 
 impl Monoid for () {
-    const zero: () = ();
-    const one: () = ();
+    const ZERO: () = ();
+    const ONE: () = ();
 
-    fn addm(&self, other: &Self) -> Self {
-        ()
-    }
+    fn addm(&self, _other: &Self) -> Self {}
 }
 
 impl Monoid for usize {
-    const zero: usize = 0;
-    const one: usize = 1;
+    const ZERO: usize = 0;
+    const ONE: usize = 1;
 
     fn addm(&self, other: &Self) -> Self {
         self + other
