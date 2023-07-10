@@ -3,12 +3,12 @@
 # cbgb
 Coloured de Bruijn Graph Builder (& other methods for updating graph-edges)
 
-This is a reference implementation for experimenting with graph algorithms on small
-genome de Bruin graph assemblies.
-
 ![CBGB OMGFUG](docs/cbgb.jpg)
 
 </div>
+
+This is a reference implementation for experimenting with graph algorithms on small
+genome de Bruin graph assemblies.
 
 ```python3
 from cbgb.omfug import lnec

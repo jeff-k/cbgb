@@ -2,20 +2,20 @@ import numpy as np
 
 """sliding slices for strings of length k
 """
-def kmerise(seq, k=12):
+def kmerise(seq: str, k: int =12) -> Generator[str]:
     for i in range(0, len(seq) - (k - 1)):
         yield seq[i:i+k]
 
 class Edge:
     """example of monoidal edge; must implement addition and unit
     """
-    def __init__(self, data=None):
+    def __init__(self, data: Any = None):
         """__init__() should return unit edge
         """
         self.data = data
         self.value = 1
 
-    def __add__(self, other):
+    def __add__(self, other: Edge) -> Edge:
         """monoid operation
         """
         data = None
@@ -28,10 +28,10 @@ class Edge:
         e.value = self.value + other.value
         return e
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         if self.data is not None:
             return f"<{self.data}: {self.value}>"
-        return self.value
+        return str(self.value)
 
 
 class LMG:
@@ -40,7 +40,7 @@ class LMG:
     def __init__(self):
         self.counts = {}
 
-    def __add__(self, other):
+    def __add__(self, other: LMG) -> LMG:
         for k in other.counts:
             if k in self.counts:
                 self.counts[k] += other.counts[k]
@@ -48,7 +48,7 @@ class LMG:
                 self.counts[k] = other.counts[k]
         return self
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         s = ', '.join(["f{k}: {self.counts[k]}" for k in self.counts])
         return f"<{s}>"
 
@@ -56,19 +56,19 @@ class LMG:
 def label(graph, colour):
     """colour all edges of a graph the same way
     """
-    map(lambda e: LMG(e, label=colour), graph.nodes.values)
+    any(map(lambda e: LMG(e, label=colour), graph.nodes.values))
 
 
 class CdB:
     """main character
     """
-    def __init__(self, kmers=None):
+    def __init__(self, kmers: Optional[Generator[str]] = None):
         self.nodes = {}
 
         if kmers:
             map(self.add, kmers)
 
-    def add(self, kmer, edge):
+    def add(self, kmer: str, edge: Edge):
         left, right = kmer[:-1], kmer[1:]
         if left not in self.nodes:
             self.nodes[left] = []
@@ -81,7 +81,7 @@ class CdB:
         else:
             self.edges[(left, right)].update(edge)
 
-    def walk(self, start=None):
+    def walk(self, start: Optional[str] = None) -> Generator[str]:
         """eulerian walk!
         """
         path = [] # the path of edges
