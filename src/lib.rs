@@ -24,17 +24,17 @@ impl Monoid for u32 {
     }
 }
 
-struct GenomeGraph;
+pub struct GenomeGraph;
 
 pub struct KmerIndex<E, const K: usize> {
-    index: Vec<E>,
-    total: usize,
+    pub index: Vec<E>,
+    pub total: usize,
 }
 
 impl<E: Monoid + Copy, const K: usize> Default for KmerIndex<E, K> {
     fn default() -> Self {
         KmerIndex {
-            index: vec![],
+            index: vec![E::M0; 1 << (K * Dna::WIDTH as usize)],
             total: 0,
         }
     }
@@ -63,7 +63,7 @@ impl<E: Monoid + Copy, const K: usize> Debruijn<K> for KmerIndex<E, K> {
     }
 }
 
-trait Debruijn<const K: usize> {
+pub trait Debruijn<const K: usize> {
     fn add(&mut self, kmer: Kmer<Dna, K>);
     fn walk(&self, start: Kmer<Dna, K>);
     fn compress(&self) -> GenomeGraph;
