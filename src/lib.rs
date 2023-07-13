@@ -1,159 +1,97 @@
-use core::hash::Hash;
-use std::cmp::Eq;
 use std::collections::HashMap;
-use std::fmt::{Debug, Display};
 
 use bio_seq::prelude::*;
 
-trait Monoid {
+pub trait Monoid {
     const M0: Self;
     const M1: Self;
-    fn add(self, rhs: Self) -> Self;
+    fn add(&mut self, rhs: Self);
 }
 
 impl Monoid for u16 {
     const M0: Self = 0u16;
     const M1: Self = 1u16;
-    fn add(self, rhs: Self) -> Self {
-        self + rhs
+    fn add(&mut self, rhs: Self) {
+        *self += rhs
     }
 }
 
-struct KmerIndex<E, const K: usize> {
+impl Monoid for u32 {
+    const M0: Self = 0u32;
+    const M1: Self = 1u32;
+    fn add(&mut self, rhs: Self) {
+        *self += rhs
+    }
+}
+
+struct GenomeGraph;
+
+pub struct KmerIndex<E, const K: usize> {
     index: Vec<E>,
     total: usize,
 }
 
-impl<E, const K: usize> KmerIndex<E, K> {
-    fn entropy(self) -> f32 {
-        0.0
+impl<E: Monoid + Copy, const K: usize> Default for KmerIndex<E, K> {
+    fn default() -> Self {
+        KmerIndex {
+            index: vec![],
+            total: 0,
+        }
+    }
+}
+
+impl<E: Monoid + Copy, const K: usize> Debruijn<K> for KmerIndex<E, K> {
+    fn add(&mut self, kmer: Kmer<Dna, K>) {
+        self.index[usize::from(kmer)].add(E::M1);
+        self.total += 1;
     }
 
-    fn kld(self, other: Self) -> f32 {
-        0.0
+    fn walk(&self, _start: Kmer<Dna, K>) {
+        unimplemented!()
+    }
+
+    fn compress(&self) -> GenomeGraph {
+        unimplemented!()
+    }
+
+    fn entropy(&self) -> f32 {
+        unimplemented!()
+    }
+
+    fn kld(&self, _other: Self) -> f32 {
+        unimplemented!()
     }
 }
 
 trait Debruijn<const K: usize> {
-    fn add(&mut self);
-    fn walk(self, start: Kmer<Dna, K>);
+    fn add(&mut self, kmer: Kmer<Dna, K>);
+    fn walk(&self, start: Kmer<Dna, K>);
+    fn compress(&self) -> GenomeGraph;
+    fn entropy(&self) -> f32;
+    fn kld(&self, _other: Self) -> f32;
 }
 
-/*
-impl<const K: usize> Debruijn<K> for HashMap<Kmer<Dna, K>, u32> {
-    fn add(&mut self) {
+impl<E: Monoid + Copy, const K: usize> Debruijn<K> for HashMap<Kmer<Dna, K>, E> {
+    fn add(&mut self, _kmer: Kmer<Dna, K>) {
         unimplemented!()
     }
 
-    fn walk(self, start: Kmer<Dna, K>) {
+    fn walk(&self, _start: Kmer<Dna, K>) {
         unimplemented!()
     }
 
-}
-*/
-
-impl<E: Monoid, const K: usize> Debruijn<K> for KmerIndex<E, K> {
-    fn add(&mut self) {
+    fn compress(&self) -> GenomeGraph {
         unimplemented!()
     }
 
-    fn walk(self, start: Kmer<Dna, K>) {
+    fn entropy(&self) -> f32 {
+        unimplemented!()
+    }
+
+    fn kld(&self, _other: Self) -> f32 {
         unimplemented!()
     }
 }
-
-trait GenomeGraph {
-    type Edge;
-    type Vertex;
-    type Error;
-
-    fn from_gfa() -> Result<Self, Self::Error>
-    where
-        Self: Sized;
-    fn to_adj(self);
-    fn subdawg(self);
-    //    fn kmers(self) -> KmerIter;
-    //    fn eulerian(self) -> bool;
-}
-
-pub struct DeBruijn<E, const K: usize> {
-    map: HashMap<Kmer<Dna, K>, (Dna, E)>,
-}
-
-/*
-impl<A: Codec + Eq + Display + Debug, const K: usize, Edge: Hash + Display>
-    DeBruijn<A, K, Edge>
-{
-    /*
-    fn compress(self) -> GenomeGraph<A, Edge> {
-        GenomeGraph {
-            edges: HashMap::new(),
-            vertices: HashSet::new(),
-        }
-    }
-    */
-
-    fn from_seq(seq: &SeqSlice<A>) -> Self {
-        if seq.len() < K {
-            panic!("Error: seq too short");
-        }
-        let mut kmers = HashMap::new();
-        for subseq in seq.windows(K + 1) {
-            let kmer: Kmer<A, K> = subseq[..K].into();
-            let out: A = A::unsafe_from_bits(u8::from(&subseq[K]));
-            let (_v, ref mut e) = kmers.entry(kmer).or_insert((out, Edge::ZERO));
-            *e = e.addm(&Edge::ONE);
-        }
-        DeBruijn { map: kmers }
-    }
-
-    /*
-    fn push_kmer(mut self, kmer: Kmer<A, N>) {
-        self.map.insert(kmer, (Edge::zero());
-    }
-    */
-    fn dump(self) {
-        for (i, (kmer, (out, edge))) in self.map.into_iter().enumerate() {
-            println!("{i}\t{kmer}\t\t{out}\t{edge}");
-        }
-    }
-}
-*/
-
-/*
-impl<A: Codec + Eq, const N: usize, Edge: Monoid + Hash + Copy> GraphBase for DeBruijn<A, N, Edge> {
-    type EdgeId = Edge;
-    type NodeId = Kmer<A, N>;
-}
-*/
-
-/*
-impl<A: Codec + Eq, const N: usize, Edge: Monoid + Hash + Copy> GraphRef for &DeBruijn<A, N, Edge>
-where [(); N+1]:,{}
-*/
-
-/*
-pub struct NeighbourIter<A: Codec, const N: usize> {
-    mers: HashMap<Kmer<A, N>, usize>,
-}
-
-impl<A: Codec, const N: usize> Iterator for NeighbourIter<A, N> {
-    type Item = Kmer<A, N>;
-    fn next(&mut self) -> Option<Kmer<A, N>> {
-        None
-    }
-}
-
-impl<A: Codec + Eq, const N: usize, Edge: Monoid + Hash + Copy> IntoNeighbors
-    for &DeBruijn<A, N, Edge>
-{
-    type Neighbors = NeighbourIter<A, N>;
-
-    fn neighbors(self, node: <Self as GraphBase>::NodeId) -> Self::Neighbors {
-        todo!()
-    }
-}
-*/
 
 #[cfg(test)]
 mod tests {
