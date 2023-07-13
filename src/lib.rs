@@ -28,22 +28,25 @@ pub struct GenomeGraph;
 
 pub struct KmerIndex<E, const K: usize> {
     pub index: Vec<E>,
-    pub total: usize,
+    pub total: E,
 }
 
 impl<E: Monoid + Copy, const K: usize> Default for KmerIndex<E, K> {
     fn default() -> Self {
         KmerIndex {
             index: vec![E::M0; 1 << (K * Dna::WIDTH as usize)],
-            total: 0,
+            total: E::M0,
         }
     }
 }
 
-impl<E: Monoid + Copy, const K: usize> Debruijn<K> for KmerIndex<E, K> {
+impl<E: Monoid + Copy, const K: usize> Debruijn<K> for KmerIndex<E, K>
+where
+    f32: From<E>,
+{
     fn add(&mut self, kmer: Kmer<Dna, K>) {
         self.index[usize::from(kmer)].add(E::M1);
-        self.total += 1;
+        self.total.add(E::M1);
     }
 
     fn walk(&self, _start: Kmer<Dna, K>) {
@@ -55,11 +58,26 @@ impl<E: Monoid + Copy, const K: usize> Debruijn<K> for KmerIndex<E, K> {
     }
 
     fn entropy(&self) -> f32 {
-        unimplemented!()
+        let mut h: f32 = 0.0;
+        for i in 0..self.index.len() {
+            let p: f32 = f32::from(self.index[i]) / f32::from(self.total);
+            if p > 0.0 {
+                h += p * p.ln();
+            }
+        }
+        h
     }
 
-    fn kld(&self, _other: Self) -> f32 {
-        unimplemented!()
+    fn kld(&self, other: &Self) -> f32 {
+        let mut h: f32 = 0.0;
+        for i in 0..self.index.len() {
+            let p: f32 = f32::from(self.index[i]) / f32::from(self.total);
+            let q: f32 = f32::from(other.index[i]) / f32::from(self.total);
+            if p > 0.0 && q > 0.0 {
+                h += q * p.ln();
+            }
+        }
+        h
     }
 }
 
@@ -68,7 +86,7 @@ pub trait Debruijn<const K: usize> {
     fn walk(&self, start: Kmer<Dna, K>);
     fn compress(&self) -> GenomeGraph;
     fn entropy(&self) -> f32;
-    fn kld(&self, _other: Self) -> f32;
+    fn kld(&self, other: &Self) -> f32;
 }
 
 impl<E: Monoid + Copy, const K: usize> Debruijn<K> for HashMap<Kmer<Dna, K>, E> {
@@ -88,7 +106,7 @@ impl<E: Monoid + Copy, const K: usize> Debruijn<K> for HashMap<Kmer<Dna, K>, E> 
         unimplemented!()
     }
 
-    fn kld(&self, _other: Self) -> f32 {
+    fn kld(&self, _other: &Self) -> f32 {
         unimplemented!()
     }
 }
