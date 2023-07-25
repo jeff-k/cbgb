@@ -1,5 +1,9 @@
-use std::collections::HashMap;
 use std::ops::AddAssign;
+
+use hashbrown::{HashMap, HashSet};
+use petgraph::visit::{
+    GraphBase, IntoNeighbors, IntoNodeIdentifiers, NodeCount, NodeIndexable, Visitable,
+};
 
 use bio_seq::prelude::*;
 
@@ -11,18 +15,66 @@ impl Default for GenomeGraph {
     }
 }
 
-pub struct KmerSet;
-
-impl Default for KmerSet {
-    fn default() -> Self {
-        Self
-    }
-}
-
 pub struct KmerIndex<E, const K: usize> {
     pub index: Vec<E>,
     pub total: usize,
 }
+
+impl<E: Copy + PartialEq, const K: usize> GraphBase for KmerIndex<E, K> {
+    type NodeId = Kmer<Dna, K>;
+    type EdgeId = E;
+}
+
+impl<const K: usize> NodeCount for KmerIndex<u32, K> {
+    fn node_count(&self) -> usize {
+        self.index.len()
+    }
+}
+
+impl<const K: usize> NodeIndexable for KmerIndex<u32, K> {
+    fn node_bound(&self) -> usize {
+        self.index.len()
+    }
+
+    fn to_index(&self, kmer: Kmer<Dna, K>) -> usize {
+        usize::from(kmer)
+    }
+
+    fn from_index(&self, index: usize) -> Kmer<Dna, K> {
+        unimplemented!()
+    }
+}
+
+/*
+impl<const K: usize> IntoNodeIdentifiers for KmerIndex<u32, K> {
+    type NodeIdentifiers = Kmer<Dna, K>;
+
+    fn node_identifiers(&self) -> Self::NodeIdentifiers {
+        unimplemented!()
+    }
+}
+*/
+
+/*
+impl<const K: usize> IntoNeighbors for KmerIndex<u32, K> {
+    fn neighbors(&self, kmer: Kmer<Dna, K>) -> Self::Neighbors {
+        unimplemented!()
+    }
+}
+*/
+
+/*
+impl<const K: usize> Visitable for KmerIndex<u32, K> {
+    type Map = HashMap<Kmer<Dna, K>, usize>;
+    fn visit_map(&self) -> Self::Map {
+        unimplemented!()
+    }
+
+    fn reset_map(&self, map: &mut Self::Map) {
+        unimplemented!()
+    }
+}
+*/
 
 impl<E: Default + Copy, const K: usize> Default for KmerIndex<E, K> {
     fn default() -> Self {
@@ -49,7 +101,7 @@ where
     fn compress(&self) -> GenomeGraph {
         //        let start: SeqSlice<Dna> = node.heads();
         let mut g: GenomeGraph = GenomeGraph::default();
-        let mut visited: KmerSet = KmerSet::default();
+        let mut visited: HashSet<Kmer<Dna, K>> = HashSet::new();
         g
     }
 

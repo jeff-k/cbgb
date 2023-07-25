@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 bio-seq = { path="../bio-seq" }
 petgraph = "0.6"
+hashbrown = "0.14"
