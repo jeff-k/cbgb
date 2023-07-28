@@ -1,10 +1,13 @@
+use std::collections;
 use std::ops::AddAssign;
+use std::rc::Rc;
 
 use hashbrown::{HashMap, HashSet};
 use petgraph::visit::{
-    GraphBase, IntoNeighbors, IntoNodeIdentifiers, NodeCount, NodeIndexable, Visitable,
+    GraphBase, GraphRef, IntoNeighbors, IntoNodeIdentifiers, NodeCount, NodeIndexable, Visitable,
 };
 
+use bio_seq::kmer::KmerIter;
 use bio_seq::prelude::*;
 
 pub struct GenomeGraph;
@@ -15,15 +18,46 @@ impl Default for GenomeGraph {
     }
 }
 
-pub struct KmerIndex<E, const K: usize> {
-    pub index: Vec<E>,
+pub trait Edge: Default + Copy + PartialEq + Clone + From<u8> {}
+
+impl Edge for u32 {}
+
+#[derive(Clone)]
+pub struct KmerIndex<E: Edge, const K: usize> {
+    pub index: Vec<E>, // this could [E; { 4**K }] if const expression are allowed
     pub total: usize,
 }
 
-impl<E: Copy + PartialEq, const K: usize> GraphBase for KmerIndex<E, K> {
+impl<E: Edge, const K: usize> GraphBase for KmerIndex<E, K> {
     type NodeId = Kmer<Dna, K>;
     type EdgeId = E;
 }
+
+/*
+impl<E: Edge, const K: usize> GraphRef for KmerIndex<E, K> {
+}
+*/
+
+#[derive(Clone)]
+pub struct KmerTable<E: Edge, const K: usize> {
+    pub index: HashMap<Kmer<Dna, K>, E>,
+    pub total: usize,
+}
+
+impl<E: Edge, const K: usize> GraphBase for KmerTable<E, K> {
+    type NodeId = Kmer<Dna, K>;
+    type EdgeId = E;
+}
+
+/*
+impl<'a, E: Edge, const K: usize> GraphRef for &'a KmerTable<E, K> {
+}
+*/
+
+/*
+impl<E: Edge, const K: usize> GraphRef for HashMap<Kmer<Dna, K>, E> {
+}
+*/
 
 impl<const K: usize> NodeCount for KmerIndex<u32, K> {
     fn node_count(&self) -> usize {
@@ -45,27 +79,24 @@ impl<const K: usize> NodeIndexable for KmerIndex<u32, K> {
     }
 }
 
-/*
-impl<const K: usize> IntoNodeIdentifiers for KmerIndex<u32, K> {
-    type NodeIdentifiers = Kmer<Dna, K>;
+impl<'a, const K: usize> IntoNodeIdentifiers for &'a KmerIndex<u32, K> {
+    type NodeIdentifiers = KmerIter<'a, Dna, K>;
 
-    fn node_identifiers(&self) -> Self::NodeIdentifiers {
+    fn node_identifiers(self) -> Self::NodeIdentifiers {
         unimplemented!()
     }
 }
-*/
 
-/*
-impl<const K: usize> IntoNeighbors for KmerIndex<u32, K> {
-    fn neighbors(&self, kmer: Kmer<Dna, K>) -> Self::Neighbors {
+impl<'a, const K: usize> IntoNeighbors for &'a KmerIndex<u32, K> {
+    type Neighbors = KmerIter<'a, Dna, K>;
+
+    fn neighbors(self, kmer: Kmer<Dna, K>) -> Self::Neighbors {
         unimplemented!()
     }
 }
-*/
 
-/*
 impl<const K: usize> Visitable for KmerIndex<u32, K> {
-    type Map = HashMap<Kmer<Dna, K>, usize>;
+    type Map = collections::HashSet<Kmer<Dna, K>>;
     fn visit_map(&self) -> Self::Map {
         unimplemented!()
     }
@@ -74,9 +105,8 @@ impl<const K: usize> Visitable for KmerIndex<u32, K> {
         unimplemented!()
     }
 }
-*/
 
-impl<E: Default + Copy, const K: usize> Default for KmerIndex<E, K> {
+impl<E: Edge, const K: usize> Default for KmerIndex<E, K> {
     fn default() -> Self {
         KmerIndex {
             index: vec![E::default(); 1 << (K * Dna::WIDTH as usize)],
@@ -85,7 +115,7 @@ impl<E: Default + Copy, const K: usize> Default for KmerIndex<E, K> {
     }
 }
 
-impl<E: Default + Copy + AddAssign<E> + From<u8>, const K: usize> Debruijn<K> for KmerIndex<E, K>
+impl<E: Edge + AddAssign<E>, const K: usize> Debruijn<K> for KmerIndex<E, K>
 where
     f64: From<E>,
 {
@@ -131,7 +161,7 @@ where
     }
 }
 
-pub trait Debruijn<const K: usize> {
+pub trait Debruijn<const K: usize>: GraphBase {
     fn add(&mut self, kmer: Kmer<Dna, K>);
     fn walk(&self, start: Kmer<Dna, K>);
     fn compress(&self) -> GenomeGraph;
@@ -139,9 +169,14 @@ pub trait Debruijn<const K: usize> {
     fn kld(&self, other: &Self) -> f64;
 }
 
-impl<E: Default, const K: usize> Debruijn<K> for HashMap<Kmer<Dna, K>, E> {
-    fn add(&mut self, _kmer: Kmer<Dna, K>) {
-        unimplemented!()
+impl<E: Edge + AddAssign, const K: usize> Debruijn<K> for KmerTable<E, K>
+where
+    f64: From<E>,
+{
+    fn add(&mut self, kmer: Kmer<Dna, K>) {
+        let entry = self.index.entry(kmer).or_insert(E::default());
+        entry.add_assign(E::from(1u8));
+        self.total += 1;
     }
 
     fn walk(&self, _start: Kmer<Dna, K>) {
@@ -153,7 +188,18 @@ impl<E: Default, const K: usize> Debruijn<K> for HashMap<Kmer<Dna, K>, E> {
     }
 
     fn entropy(&self) -> f64 {
-        unimplemented!()
+        let mut h: f64 = 0.0;
+        let mut t: f64 = 0.0;
+        for count in self.index.values() {
+            t += f64::from(*count);
+        }
+        for count in self.index.values() {
+            let p: f64 = f64::from(*count) / t;
+            if p > 0.0 {
+                h += p * p.ln();
+            }
+        }
+        h
     }
 
     fn kld(&self, _other: &Self) -> f64 {
