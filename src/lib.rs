@@ -1,10 +1,9 @@
 use std::collections;
 use std::ops::AddAssign;
-use std::rc::Rc;
 
-use hashbrown::{HashMap, HashSet};
+use hashbrown::HashMap;
 use petgraph::visit::{
-    GraphBase, GraphRef, IntoNeighbors, IntoNodeIdentifiers, NodeCount, NodeIndexable, Visitable,
+    GraphBase, IntoNeighbors, IntoNodeIdentifiers, NodeCount, NodeIndexable, Visitable,
 };
 
 use bio_seq::kmer::KmerIter;
@@ -74,7 +73,7 @@ impl<const K: usize> NodeIndexable for KmerIndex<u32, K> {
         usize::from(kmer)
     }
 
-    fn from_index(&self, index: usize) -> Kmer<Dna, K> {
+    fn from_index(&self, _index: usize) -> Kmer<Dna, K> {
         unimplemented!()
     }
 }
@@ -90,18 +89,18 @@ impl<'a, const K: usize> IntoNodeIdentifiers for &'a KmerIndex<u32, K> {
 impl<'a, const K: usize> IntoNeighbors for &'a KmerIndex<u32, K> {
     type Neighbors = KmerIter<'a, Dna, K>;
 
-    fn neighbors(self, kmer: Kmer<Dna, K>) -> Self::Neighbors {
+    fn neighbors(self, _kmer: Kmer<Dna, K>) -> Self::Neighbors {
         unimplemented!()
     }
 }
 
 impl<const K: usize> Visitable for KmerIndex<u32, K> {
-    type Map = collections::HashSet<Kmer<Dna, K>>;
+    type Map = collections::HashSet<Kmer<Dna, K>>; // would prefer hashbrown::HashSet
     fn visit_map(&self) -> Self::Map {
         unimplemented!()
     }
 
-    fn reset_map(&self, map: &mut Self::Map) {
+    fn reset_map(&self, _map: &mut Self::Map) {
         unimplemented!()
     }
 }
@@ -131,7 +130,6 @@ where
     fn compress(&self) -> GenomeGraph {
         //        let start: SeqSlice<Dna> = node.heads();
         let mut g: GenomeGraph = GenomeGraph::default();
-        let mut visited: HashSet<Kmer<Dna, K>> = HashSet::new();
         g
     }
 
