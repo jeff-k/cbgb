@@ -20,6 +20,8 @@ impl Default for GenomeGraph {
 pub trait Edge: Default + Copy + PartialEq + Clone + From<u8> {}
 
 impl Edge for u32 {}
+impl Edge for u16 {}
+impl Edge for u8 {}
 
 pub trait Debruijn<const K: usize>: GraphBase {
     fn add(&mut self, kmer: Kmer<Dna, K>);

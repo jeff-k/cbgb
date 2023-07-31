@@ -19,6 +19,15 @@ impl<E: Edge, const K: usize> GraphBase for KmerTable<E, K> {
     type EdgeId = E;
 }
 
+impl<E: Edge, const K: usize> Default for KmerTable<E, K> {
+    fn default() -> Self {
+        KmerTable {
+            index: HashMap::new(),
+            total: 0,
+        }
+    }
+}
+
 /*
 impl<'a, E: Edge, const K: usize> GraphRef for &'a KmerTable<E, K> {
 }
@@ -57,7 +66,21 @@ where
         h
     }
 
-    fn kld(&self, _other: &Self) -> f64 {
-        unimplemented!()
+    fn kld(&self, other: &Self) -> f64 {
+        let mut h: f64 = 0.0;
+        let t_p: f64 = self.total as f64;
+        let t_q: f64 = other.total as f64;
+        if t_p == 0.0 || t_q == 0.0 {
+            return 0.0;
+        }
+
+        for (kmer, c_p) in self.index.iter() {
+            if let Some(c_q) = other.index.get(kmer) {
+                let p: f64 = f64::from(*c_p) / t_p;
+                let q: f64 = f64::from(*c_q) / t_q;
+                h += q * p.ln();
+            }
+        }
+        h
     }
 }
