@@ -1,7 +1,11 @@
 mod kmer_array;
+mod kmer_map;
+mod kmer_set;
 mod kmer_table;
 
 pub use kmer_array::KmerArray;
+pub use kmer_map::KmerMap;
+pub use kmer_set::KmerSet;
 pub use kmer_table::KmerTable;
 
 use petgraph::visit::GraphBase;
