@@ -2,6 +2,8 @@ use hashbrown::HashMap;
 
 use bio_seq::prelude::*;
 
+use crate::alignment;
+
 #[derive(Clone)]
 pub struct KmerMap<const K: usize> {
     pub index: HashMap<Kmer<Dna, K>, i32>,
@@ -29,20 +31,29 @@ impl<const K: usize> KmerMap<K> {
         }
 
         KmerMap {
-            index: index,
+            index,
             len: len as u32,
         }
     }
 
-    pub fn map(&self, seq: &SeqSlice<Dna>) -> Vec<Option<i32>> {
+    pub fn match_kmers(&self, seq: &SeqSlice<Dna>) -> Vec<Option<i32>> {
+        let mut mapping: Vec<Option<i32>> = Vec::new();
+
         if seq.len() < K {
-            panic!()
+            // this may better be an exception
+            return mapping;
         }
 
-        let mut mapping: Vec<Option<i32>> = Vec::new();
         for kmer in seq.kmers() {
             mapping.push(self.index.get(&kmer).copied());
         }
         mapping
+    }
+}
+
+impl<const K: usize> alignment::QuasiAlign for KmerMap<K> {
+    fn quasi_align(&self, seq: &SeqSlice<Dna>) -> Vec<alignment::Alignment> {
+        let v: Vec<Option<i32>> = self.match_kmers(seq);
+        alignment::merge_segments(v, K)
     }
 }
