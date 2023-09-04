@@ -51,8 +51,8 @@ impl<const K: usize> KmerMap<K> {
     }
 }
 
-impl<const K: usize> alignment::QuasiAlign for KmerMap<K> {
-    fn quasi_align(&self, seq: &SeqSlice<Dna>) -> Vec<alignment::Alignment> {
+impl<const K: usize, A: alignment::QuasiAlignment> alignment::QuasiAlign<A> for KmerMap<K> {
+    fn quasi_align(&self, seq: &SeqSlice<Dna>) -> Vec<A> {
         let v: Vec<Option<i32>> = self.match_kmers(seq);
         alignment::merge_segments(v, K)
     }

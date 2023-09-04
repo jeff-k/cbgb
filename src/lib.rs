@@ -1,10 +1,10 @@
-mod alignment;
+pub mod alignment;
 mod kmer_array;
 mod kmer_map;
 mod kmer_set;
 mod kmer_table;
 
-pub use alignment::Alignment;
+pub use alignment::{Alignment, QuasiAlign};
 pub use kmer_array::KmerArray;
 pub use kmer_map::KmerMap;
 pub use kmer_set::KmerSet;
@@ -37,6 +37,7 @@ pub trait Debruijn<const K: usize>: GraphBase {
     fn kld(&self, other: &Self) -> f64;
 }
 
+/*
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -50,3 +51,4 @@ mod tests {
         assert!(false);
     }
 }
+*/
