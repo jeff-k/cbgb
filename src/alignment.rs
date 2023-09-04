@@ -79,6 +79,19 @@ pub trait QuasiAlign<A: QuasiAlignment> {
     fn quasi_align(&self, seq: &SeqSlice<Dna>) -> Vec<A>;
 }
 
+fn extend_condition<A: QuasiAlignment>(
+    alignment: &A,
+    r_pos: u32,
+    q_pos: u32,
+    forward: bool,
+) -> bool {
+    if forward {
+        alignment.r_end() + 1 == r_pos && alignment.q_end() + 1 == q_pos
+    } else {
+        alignment.r_start() == r_pos + 1 && alignment.q_end() + 1 == q_pos
+    }
+}
+
 pub fn merge_segments<A: QuasiAlignment>(matches: Vec<Option<i32>>, _k: usize) -> Vec<A> {
     let mut alignments: Vec<A> = Vec::new();
 
@@ -98,9 +111,13 @@ pub fn merge_segments<A: QuasiAlignment>(matches: Vec<Option<i32>>, _k: usize) -
                 let r_pos = r_pos.unsigned_abs(); // 1-indexed
 
                 if let Some(a) = &mut alignment {
-                    if a.forward() == forward && a.r_end() + 1 == r_pos && a.q_end() + 1 == q_pos {
+                    if extend_condition(a, r_pos, q_pos, forward) {
                         // Extend the current alignment
-                        a.set_r_end(r_pos);
+                        if forward {
+                            a.set_r_end(r_pos);
+                        } else {
+                            a.set_r_start(r_pos);
+                        }
                         a.set_q_end(q_pos);
                     } else {
                         // Save the current alignment and start a new one
@@ -164,7 +181,7 @@ mod tests {
 
     #[test]
     fn test_multiple_alignments() {
-        let kmer_map = vec![Some(1), Some(2), None, Some(4), Some(5)];
+        let kmer_map = vec![Some(1), Some(2), None, Some(3), Some(4)];
         let alignments: Vec<Alignment> = merge_segments(kmer_map, 1);
         assert_eq!(alignments.len(), 2);
         let a = &alignments[0];
@@ -173,11 +190,17 @@ mod tests {
         assert_eq!(a.r_start, 1);
         assert_eq!(a.r_end, 2);
         assert!(a.forward);
+        let b = &alignments[1];
+        assert_eq!(b.q_start, 4);
+        assert_eq!(b.q_end, 5);
+        assert_eq!(b.r_start, 3);
+        assert_eq!(b.r_end, 4);
+        assert!(b.forward);
     }
 
     #[test]
     fn test_reverse_alignment() {
-        let kmer_map = vec![Some(-1), Some(-2), Some(-3), Some(-4)];
+        let kmer_map = vec![Some(-4), Some(-3), Some(-2), Some(-1)];
         let alignments: Vec<Alignment> = merge_segments(kmer_map, 1);
         assert_eq!(alignments.len(), 1);
         let a = &alignments[0];
@@ -190,14 +213,20 @@ mod tests {
 
     #[test]
     fn test_multiple_reverse_alignments() {
-        let kmer_map = vec![Some(-1), Some(-2), None, Some(-4), Some(-5)];
+        let kmer_map = vec![Some(-4), Some(-3), None, Some(-2), Some(-1)];
         let alignments: Vec<Alignment> = merge_segments(kmer_map, 1);
         assert_eq!(alignments.len(), 2);
         let a = &alignments[0];
         assert_eq!(a.q_start, 1);
         assert_eq!(a.q_end, 2);
-        assert_eq!(a.r_start, 1);
-        assert_eq!(a.r_end, 2);
+        assert_eq!(a.r_start, 3);
+        assert_eq!(a.r_end, 4);
         assert!(a.forward == false);
+        let b = &alignments[1];
+        assert_eq!(b.q_start, 4);
+        assert_eq!(b.q_end, 5);
+        assert_eq!(b.r_start, 1);
+        assert_eq!(b.r_end, 2);
+        assert!(b.forward == false);
     }
 }
