@@ -1,4 +1,5 @@
 use bio_seq::prelude::{Dna, SeqSlice};
+use core::fmt::Debug;
 
 pub trait QuasiAlignment: Clone {
     fn new(q_start: u32, q_end: u32, r_start: u32, r_end: u32, forward: bool) -> Self;
@@ -93,7 +94,7 @@ fn extend_condition<A: QuasiAlignment>(
     }
 }
 
-pub fn merge_segments<A: QuasiAlignment>(matches: Vec<Option<i32>>, k: u32) -> Vec<A> {
+pub fn merge_segments<A: QuasiAlignment + Debug>(matches: Vec<Option<i32>>, k: u32) -> Vec<A> {
     let mut alignments: Vec<A> = Vec::new();
 
     // working values for the current segment
@@ -101,6 +102,10 @@ pub fn merge_segments<A: QuasiAlignment>(matches: Vec<Option<i32>>, k: u32) -> V
 
     for (q_pos, pos) in matches.into_iter().enumerate() {
         let q_pos = q_pos as u32 + 1; // 1-indexed
+        println!(
+            "processing match q_pos: {:?}, pos: {:?}. Working alignment: {:?}",
+            q_pos, pos, &alignment
+        );
 
         match pos {
             Some(0) => {
@@ -118,6 +123,7 @@ pub fn merge_segments<A: QuasiAlignment>(matches: Vec<Option<i32>>, k: u32) -> V
 
                 if let Some(a) = &mut alignment {
                     if extend_condition(a, r_pos, q_pos, forward, k) {
+                        println!("\textend condition met");
                         // Extend the current alignment
                         if forward {
                             a.set_r_end(r_pos + k);
@@ -127,20 +133,27 @@ pub fn merge_segments<A: QuasiAlignment>(matches: Vec<Option<i32>>, k: u32) -> V
                         a.set_q_end(q_pos + k);
                     } else {
                         // Save the current alignment and start a new one
+                        println!("\tpushing working alignment and starting new one");
                         alignments.push(a.clone());
                         alignment = Some(A::new(q_pos, q_pos + k, r_pos, r_pos + k, forward));
                     }
                 } else {
+                    println!("\tno initialised alignments, starting new one");
                     // Start a new alignment
                     alignment = Some(A::new(q_pos, q_pos + k, r_pos, r_pos + k, forward));
                 }
             }
             None => {
+                println!("\tNone for kmer match: resetting alignment");
                 // Non-matching kmer
-                if let Some(a) = alignment.take() {
+                if let Some(mut a) = alignment.take() {
                     // Save the current alignment if it exists
+                    println!("\tpushing working alignment");
+                    //   a.set_q_end(q_pos - 1);
                     alignments.push(a);
                 }
+                // Reset working alignment
+                alignment = None;
             }
         }
     }
@@ -304,5 +317,61 @@ mod tests {
         assert_eq!(a.r_start(), 1);
         assert_eq!(a.r_end(), 24);
         assert!(!a.forward());
+    }
+
+    #[test]
+    fn test_disjoint_segments_with_k_5() {
+        let kmer_map = vec![
+            Some(1),
+            Some(2),
+            Some(3),
+            Some(4),
+            Some(5), // Forward segment
+            None,
+            None,
+            None,
+            None,
+            None, // Gap
+            Some(11),
+            Some(12),
+            Some(13),
+            Some(14),
+            Some(15),
+            Some(16),
+            Some(17),
+            Some(18),
+            Some(19),
+            Some(20),
+            Some(21), // Forward segment
+            Some(-24),
+            Some(-23),
+            Some(-22),
+            Some(-21),
+            Some(-20), // Reverse segment
+        ];
+        let k = 4; // K-mer length is 5, so k = 5 - 1 = 4
+        let alignments: Vec<Alignment> = merge_segments(kmer_map, k);
+        assert_eq!(alignments.len(), 3); // Two disjoint segments in forward and one in reverse
+
+        let a = &alignments[0];
+        assert_eq!(a.q_start(), 1);
+        assert_eq!(a.q_end(), 5);
+        assert_eq!(a.r_start(), 1);
+        assert_eq!(a.r_end(), 5);
+        assert!(a.forward());
+
+        let b = &alignments[1];
+        assert_eq!(b.q_start(), 11);
+        assert_eq!(b.q_end(), 21);
+        assert_eq!(b.r_start(), 11);
+        assert_eq!(b.r_end(), 21);
+        assert!(b.forward());
+
+        let c = &alignments[2];
+        assert_eq!(c.q_start(), 22);
+        assert_eq!(c.q_end(), 26);
+        assert_eq!(c.r_start(), 20);
+        assert_eq!(c.r_end(), 24);
+        assert!(!c.forward());
     }
 }

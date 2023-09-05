@@ -1,3 +1,4 @@
+use core::fmt::Debug;
 use hashbrown::HashMap;
 
 use bio_seq::prelude::*;
@@ -51,7 +52,7 @@ impl<const K: usize> KmerMap<K> {
     }
 }
 
-impl<const K: usize, A: alignment::QuasiAlignment> alignment::QuasiAlign<A> for KmerMap<K> {
+impl<const K: usize, A: alignment::QuasiAlignment + Debug> alignment::QuasiAlign<A> for KmerMap<K> {
     fn quasi_align(&self, seq: &SeqSlice<Dna>) -> Vec<A> {
         let v: Vec<Option<i32>> = self.match_kmers(seq);
         alignment::merge_segments(v, K as u32 - 1)
