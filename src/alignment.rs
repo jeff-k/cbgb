@@ -80,89 +80,83 @@ pub trait QuasiAlign<A: QuasiAlignment> {
     fn quasi_align(&self, seq: &SeqSlice<Dna>) -> Vec<A>;
 }
 
-fn extend_condition<A: QuasiAlignment>(
-    alignment: &A,
-    r_pos: u32,
-    q_pos: u32,
-    forward: bool,
-    k: u32,
-) -> bool {
-    if forward {
-        alignment.r_end() + 1 == r_pos + k && alignment.q_end() + 1 == q_pos + k
-    } else {
-        alignment.r_start() == r_pos + 1 && alignment.q_end() + 1 == q_pos + k
-    }
+pub fn mergable<A: QuasiAlignment>(working: &A, current: &A) -> bool {
+    working.forward() == current.forward()
+        && working.r_start() + 1 == current.r_start()
+        && working.q_end() + 1 == current.q_start()
+}
+
+pub fn merge<A: QuasiAlignment>(working: &mut A, current: &A) {
+    working.set_q_end(current.q_end());
+    working.set_r_end(current.r_end());
 }
 
 pub fn merge_segments<A: QuasiAlignment + Debug>(matches: Vec<Option<i32>>, k: u32) -> Vec<A> {
     let mut alignments: Vec<A> = Vec::new();
+    let mut alignment: Option<A> = None; // the working alignment
 
-    // working values for the current segment
-    let mut alignment: Option<A> = None;
+    for (q_start, &mapping) in matches.iter().enumerate() {
+        let q_start: u32 = q_start as u32 + 1; // 1-indexed
+        let q_end: u32 = q_start + k;
 
-    for (q_pos, pos) in matches.into_iter().enumerate() {
-        let q_pos = q_pos as u32 + 1; // 1-indexed
-        println!(
-            "processing match q_pos: {:?}, pos: {:?}. Working alignment: {:?}",
-            q_pos, pos, &alignment
-        );
-
-        match pos {
+        let segment: Option<A> = match mapping {
             Some(0) => {
-                // Ambiguously matching kmer
-                // You can decide what to do here based on your specific requirements
+                // if this kmer matches the reference ambiguously
+                None
             }
             Some(r_pos) => {
-                let forward = r_pos > 0;
+                // if this kmer matches the reference uniquely
+                let forward: bool = r_pos > 0;
 
-                let r_pos = if forward {
-                    r_pos.unsigned_abs()
+                let r_start: u32 = if forward {
+                    r_pos as u32
                 } else {
                     r_pos.unsigned_abs() - k
                 };
-
-                if let Some(a) = &mut alignment {
-                    if extend_condition(a, r_pos, q_pos, forward, k) {
-                        println!("\textend condition met");
-                        // Extend the current alignment
-                        if forward {
-                            a.set_r_end(r_pos + k);
-                        } else {
-                            a.set_r_start(r_pos);
-                        }
-                        a.set_q_end(q_pos + k);
-                    } else {
-                        // Save the current alignment and start a new one
-                        println!("\tpushing working alignment and starting new one");
-                        alignments.push(a.clone());
-                        alignment = Some(A::new(q_pos, q_pos + k, r_pos, r_pos + k, forward));
-                    }
-                } else {
-                    println!("\tno initialised alignments, starting new one");
-                    // Start a new alignment
-                    alignment = Some(A::new(q_pos, q_pos + k, r_pos, r_pos + k, forward));
-                }
+                let r_end: u32 = r_start + k;
+                Some(A::new(q_start, q_end, r_start, r_end, forward))
             }
             None => {
-                println!("\tNone for kmer match: resetting alignment");
-                // Non-matching kmer
-                if let Some(mut a) = alignment.take() {
-                    // Save the current alignment if it exists
-                    println!("\tpushing working alignment");
-                    //   a.set_q_end(q_pos - 1);
-                    alignments.push(a);
-                }
-                // Reset working alignment
+                // if this kmer does not match the reference
+                None
+            }
+        };
+
+        println!("{:?}", segment);
+
+        match (&mut alignment, &segment) {
+            (None, None) => {
+                println!("\t(no working alignment or segment)");
+            }
+            (Some(working_alignment), None) => {
+                // encountering a run of None, push alignment
+                println!("\tworking alignment but segment None");
+                alignments.push(working_alignment.clone());
                 alignment = None;
+            }
+            (Some(working_alignment), Some(current_segment)) => {
+                // decide whether to merge current segment into working alignment
+                if mergable(working_alignment, current_segment) {
+                    println!("\tmergable segment");
+                    merge(working_alignment, current_segment);
+                } else {
+                    println!("\tnon-mergeable segment. new alignment");
+                    alignments.push(working_alignment.clone());
+                    alignment = Some(current_segment.clone());
+                }
+            }
+            (None, Some(current_segment)) => {
+                // initialize new working alignment from this segment
+                println!("\tNo working alignment, new segment");
+                alignment = Some(current_segment.clone());
             }
         }
     }
 
-    // Save the last alignment if it exists
-    if let Some(a) = alignment {
-        alignments.push(a);
+    // if there is a remaining working alignment, push it
+    if let Some(remaining) = alignment {
+        alignments.push(remaining);
     }
-
     alignments
 }
 
@@ -275,6 +269,7 @@ mod tests {
         ];
         let k = 4; // K-mer length is 5, so k = 5 - 1 = 4
         let alignments: Vec<Alignment> = merge_segments(kmer_map, k);
+        println!("{:?}", alignments);
         assert_eq!(alignments.len(), 1);
         let a = &alignments[0];
         assert_eq!(a.q_start(), 1);
@@ -320,6 +315,90 @@ mod tests {
     }
 
     #[test]
+    fn test_repeats_forward() {
+        let kmer_map = vec![
+            Some(1),
+            Some(2),
+            Some(3),
+            Some(4),
+            Some(5),
+            Some(6),
+            Some(1),
+            Some(2),
+            Some(3),
+            Some(4),
+            Some(5),
+            Some(6),
+            Some(1),
+            Some(2),
+            Some(3),
+            Some(4),
+            Some(5),
+            Some(6),
+        ];
+        let k = 4; // K-mer length is 5, so k = 5 - 1 = 4
+        let alignments: Vec<Alignment> = merge_segments(kmer_map, k);
+        println!("{:?}", alignments);
+        assert_eq!(alignments.len(), 3);
+
+        let a = &alignments[0];
+        assert_eq!(a.q_start(), 1);
+        assert_eq!(a.q_end(), 6);
+        assert_eq!(a.r_start(), 1);
+        assert_eq!(a.r_end(), 6);
+        assert!(a.forward());
+        let b = &alignments[1];
+        assert_eq!(b.q_start(), 7);
+        assert_eq!(b.q_end(), 12);
+        assert_eq!(b.r_start(), 1);
+        assert_eq!(b.r_end(), 6);
+        assert!(b.forward());
+        let c = &alignments[2];
+        assert_eq!(c.q_start(), 13);
+        assert_eq!(c.q_end(), 18);
+        assert_eq!(c.r_start(), 1);
+        assert_eq!(c.r_end(), 6);
+        assert!(c.forward());
+    }
+
+    #[test]
+    fn test_unmapped_ends() {
+        let kmer_map = vec![
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some(1),
+            Some(2),
+            Some(3),
+            Some(4),
+            Some(5),
+            Some(6),
+            Some(7),
+            Some(8),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        ];
+        let k = 4; // K-mer length is 5, so k = 5 - 1 = 4
+        let alignments: Vec<Alignment> = merge_segments(kmer_map, k);
+        println!("{:?}", alignments);
+        assert_eq!(alignments.len(), 1);
+
+        let a = &alignments[0];
+        assert_eq!(a.q_start(), 7);
+        assert_eq!(a.q_end(), 14);
+        assert_eq!(a.r_start(), 1);
+        assert_eq!(a.r_end(), 8);
+        assert!(a.forward());
+    }
+
+    #[test]
     fn test_disjoint_segments_with_k_5() {
         let kmer_map = vec![
             Some(1),
@@ -351,6 +430,7 @@ mod tests {
         ];
         let k = 4; // K-mer length is 5, so k = 5 - 1 = 4
         let alignments: Vec<Alignment> = merge_segments(kmer_map, k);
+        println!("{:?}", alignments);
         assert_eq!(alignments.len(), 3); // Two disjoint segments in forward and one in reverse
 
         let a = &alignments[0];
