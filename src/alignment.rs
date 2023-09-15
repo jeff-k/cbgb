@@ -81,14 +81,25 @@ pub trait QuasiAlign<A: QuasiAlignment> {
 }
 
 pub fn mergable<A: QuasiAlignment>(working: &A, current: &A) -> bool {
-    working.forward() == current.forward()
-        && working.r_start() + 1 == current.r_start()
-        && working.q_end() + 1 == current.q_start()
+    if working.forward() == current.forward() {
+        if working.forward() {
+            working.r_end() + 1 == current.r_end() && working.q_end() + 1 == current.q_end()
+        // this ensures we didn't skip Nones
+        } else {
+            working.r_start() + 1 == current.r_start() && working.q_end() + 1 == current.q_end()
+        }
+    } else {
+        false
+    }
 }
 
 pub fn merge<A: QuasiAlignment>(working: &mut A, current: &A) {
     working.set_q_end(current.q_end());
-    working.set_r_end(current.r_end());
+    if working.forward() {
+        working.set_r_end(current.r_end());
+    } else {
+        working.set_r_start(current.r_start());
+    }
 }
 
 pub fn merge_segments<A: QuasiAlignment + Debug>(matches: Vec<Option<i32>>, k: u32) -> Vec<A> {
@@ -102,18 +113,17 @@ pub fn merge_segments<A: QuasiAlignment + Debug>(matches: Vec<Option<i32>>, k: u
         let segment: Option<A> = match mapping {
             Some(0) => {
                 // if this kmer matches the reference ambiguously
-                None
+                unimplemented!()
             }
             Some(r_pos) => {
                 // if this kmer matches the reference uniquely
                 let forward: bool = r_pos > 0;
 
-                let r_start: u32 = if forward {
-                    r_pos as u32
+                let (r_start, r_end): (u32, u32) = if forward {
+                    (r_pos as u32, r_pos as u32 + k)
                 } else {
-                    r_pos.unsigned_abs() - k
+                    (r_pos.unsigned_abs() - k, r_pos.unsigned_abs())
                 };
-                let r_end: u32 = r_start + k;
                 Some(A::new(q_start, q_end, r_start, r_end, forward))
             }
             None => {
@@ -155,6 +165,7 @@ pub fn merge_segments<A: QuasiAlignment + Debug>(matches: Vec<Option<i32>>, k: u
 
     // if there is a remaining working alignment, push it
     if let Some(remaining) = alignment {
+        println!("\tquery exhausted, pushing remaining working segment");
         alignments.push(remaining);
     }
     alignments
