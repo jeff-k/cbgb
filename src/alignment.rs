@@ -461,4 +461,85 @@ mod tests {
             }
         );
     }
+    #[test]
+    fn test_accordian() {
+        // the accordian test
+        // Original Reference: ACGTGA
+        // Query: ACGTGATCACGTACGTGATCACGT
+        // k: 5
+
+        let kmer_map = vec![
+            Some(1),
+            Some(2),
+            None,
+            None,
+            None,
+            None,
+            Some(-6),
+            Some(-5),
+            None,
+            None,
+            None,
+            None,
+            Some(1),
+            Some(2),
+            None,
+            None,
+            None,
+            None,
+            Some(-6),
+            Some(-5),
+        ];
+        let k = 5; // K-mer length is 5
+        let alignments: Vec<Alignment> = merge_segments(kmer_map, k);
+        assert_eq!(alignments.len(), 4);
+
+        let a0 = &alignments[0];
+        assert_eq!(
+            *a0,
+            Alignment {
+                q_start: 0,
+                q_end: 6,
+                r_start: 0,
+                r_end: 6,
+                forward: true
+            }
+        );
+
+        let a1 = &alignments[1];
+        assert_eq!(
+            *a1,
+            Alignment {
+                q_start: 6,
+                q_end: 12,
+                r_start: 0,
+                r_end: 6,
+                forward: false
+            }
+        );
+
+        let a2 = &alignments[2];
+        assert_eq!(
+            *a2,
+            Alignment {
+                q_start: 12,
+                q_end: 18,
+                r_start: 0,
+                r_end: 6,
+                forward: true
+            }
+        );
+
+        let a3 = &alignments[3];
+        assert_eq!(
+            *a3,
+            Alignment {
+                q_start: 18,
+                q_end: 24,
+                r_start: 0,
+                r_end: 6,
+                forward: false
+            }
+        );
+    }
 }
