@@ -106,10 +106,20 @@ pub fn merge<A: QuasiAlignment>(working: &mut A, current: &A) {
 pub fn merge_segments<A: QuasiAlignment + Debug>(matches: Vec<Option<i32>>, k: u32) -> Vec<A> {
     let mut alignments: Vec<A> = Vec::new();
     let mut alignment: Option<A> = None; // the working alignment
+    let mut last_segment_end: u32 = 0;
 
-    for (q_start, &mapping) in matches.iter().enumerate() {
+    let mut match_enumerator = matches.iter().enumerate();
+    for (q_start, &mapping) in match_enumerator {
         let q_start: u32 = q_start as u32;
         let q_end: u32 = q_start + k;
+
+        if q_start < last_segment_end {
+            println!(
+                "\t\tskipping {}-{}, {:?} (last q_end: {})",
+                q_start, q_end, mapping, last_segment_end
+            );
+            continue;
+        }
 
         let segment: Option<A> = match mapping {
             Some(0) => {
@@ -121,9 +131,11 @@ pub fn merge_segments<A: QuasiAlignment + Debug>(matches: Vec<Option<i32>>, k: u
                 let forward: bool = r_pos > 0;
 
                 let (r_start, r_end): (u32, u32) = if forward {
-                    (r_pos as u32 - 1, (r_pos as u32 - 1) + k)
+                    let r_pos: u32 = r_pos as u32 - 1;
+                    (r_pos, r_pos + k)
                 } else {
-                    (r_pos.unsigned_abs() - k, r_pos.unsigned_abs())
+                    let r_pos: u32 = r_pos.unsigned_abs();
+                    (r_pos - k, r_pos)
                 };
                 Some(A::new(q_start, q_end, r_start, r_end, forward))
             }
@@ -143,6 +155,7 @@ pub fn merge_segments<A: QuasiAlignment + Debug>(matches: Vec<Option<i32>>, k: u
             (Some(working_alignment), None) => {
                 // encountering a run of None, push alignment
                 println!("\tworking alignment but segment None");
+                last_segment_end = working_alignment.q_end();
                 alignments.push(working_alignment.clone());
                 alignment = None;
             }
@@ -153,6 +166,7 @@ pub fn merge_segments<A: QuasiAlignment + Debug>(matches: Vec<Option<i32>>, k: u
                     merge(working_alignment, current_segment);
                 } else {
                     println!("\tnon-mergeable segment. new alignment");
+                    last_segment_end = working_alignment.q_end();
                     alignments.push(working_alignment.clone());
                     alignment = Some(current_segment.clone());
                 }
@@ -180,7 +194,6 @@ mod tests {
     #[test]
     fn test_simple_alignment() {
         // Testing an alignment scenario where the query is a substring of the reference
-        // Original Reference: "ACGTGACGGTCGTACCACCAAAGT", Query: "GACGGTCGT"
         let kmer_map = vec![Some(7), Some(8), Some(9), Some(10), Some(11)];
         let k = 5; // K-mer length is 5
         let alignments: Vec<Alignment> = merge_segments(kmer_map, k);
@@ -264,8 +277,8 @@ mod tests {
             Some(-5),
             None,
             // this example generates a breakpoint artefact
-            None, //Some(11),
-            None, //Some(-15),
+            Some(11),
+            Some(-15),
             None,
             Some(1),
             Some(2),
@@ -304,9 +317,6 @@ mod tests {
     #[test]
     fn test_basic_alignment() {
         // Testing a basic alignment scenario
-        // Original Reference: ACGTGACGGTCGTACCACCAAAGT
-        // Query: ACGTGACGGT
-        // k: 5
 
         let kmer_map = vec![Some(1), Some(2), Some(3), Some(4), Some(5), Some(6)];
         let k = 5; // K-mer length is 5
@@ -327,6 +337,28 @@ mod tests {
     }
 
     #[test]
+    fn test_basic_reverse_alignment() {
+        // Testing a basic alignment scenario
+
+        let kmer_map = vec![Some(-10), Some(-9), Some(-8), Some(-7), Some(-6), Some(-5)];
+        let k = 5; // K-mer length is 5
+        let alignments: Vec<Alignment> = merge_segments(kmer_map, k);
+        assert_eq!(alignments.len(), 1);
+
+        let a0 = &alignments[0];
+        assert_eq!(
+            *a0,
+            Alignment {
+                q_start: 0,
+                q_end: 10,
+                r_start: 0,
+                r_end: 10,
+                forward: false
+            }
+        );
+    }
+
+    #[test]
     fn test_non_matching_kmers() {
         // Testing a scenario with non-matching k-mers
         // Original Reference: ACGTGACGGTCGTACCACCAAAGT
@@ -342,11 +374,13 @@ mod tests {
     #[test]
     fn test_ambiguous_kmers() {
         // Testing a scenario with ambiguous k-mers
-        // Original Reference: ACGTGACGGTCG TACCACCAAAGT
-        // Query:              ACGT         GTACCA
+        // note that the middle `G` should have matches belong to two
+        // different segments.
+        // Original Reference: ACGTGACGGTCGTACCACCAAAGT
+        // Query:              ACGTG       TACCAC
         // k: 5
 
-        let kmer_map = vec![Some(1), None, None, None, Some(12), Some(13)];
+        let kmer_map = vec![Some(1), None, None, None, Some(12), Some(13), Some(14)];
         let k = 5; // K-mer length is 5
         let alignments: Vec<Alignment> = merge_segments(kmer_map, k);
         assert_eq!(alignments.len(), 2);
@@ -367,10 +401,10 @@ mod tests {
         assert_eq!(
             *a1,
             Alignment {
-                q_start: 4,
-                q_end: 10,
-                r_start: 11,
-                r_end: 17,
+                q_start: 5,
+                q_end: 11,
+                r_start: 12,
+                r_end: 18,
                 forward: true
             }
         );
