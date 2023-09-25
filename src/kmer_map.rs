@@ -27,7 +27,7 @@ impl<const K: usize> KmerMap<K> {
             if let Some(v) = index.get_mut(&kmer) {
                 *v = 0;
             } else {
-                index.insert(kmer, pos as i32 - len);
+                index.insert(kmer, (pos as i32 + 1) - len);
             }
         }
 
@@ -53,8 +53,9 @@ impl<const K: usize> KmerMap<K> {
 }
 
 impl<const K: usize, A: alignment::QuasiAlignment + Debug> alignment::QuasiAlign<A> for KmerMap<K> {
-    fn quasi_align(&self, seq: &SeqSlice<Dna>) -> Vec<A> {
+    fn quasi_align(&self, seq: &SeqSlice<Dna>, gap: u32) -> Vec<A> {
         let v: Vec<Option<i32>> = self.match_kmers(seq);
-        alignment::merge_segments(v, K as u32 - 1)
+        let x: Vec<A> = alignment::merge_segments(v, K as u32 - 1);
+        alignment::merge_contigs(x, gap)
     }
 }

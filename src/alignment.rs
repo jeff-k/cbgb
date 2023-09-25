@@ -77,7 +77,7 @@ impl QuasiAlignment for Alignment {
 }
 
 pub trait QuasiAlign<A: QuasiAlignment> {
-    fn quasi_align(&self, seq: &SeqSlice<Dna>) -> Vec<A>;
+    fn quasi_align(&self, seq: &SeqSlice<Dna>, gap: u32) -> Vec<A>;
 }
 
 pub fn mergable<A: QuasiAlignment>(working: &A, current: &A) -> bool {
@@ -107,24 +107,25 @@ pub fn merge_segments<A: QuasiAlignment + Debug>(matches: Vec<Option<i32>>, k: u
     let mut alignments: Vec<A> = Vec::new();
     let mut alignment: Option<A> = None; // the working alignment
     let mut last_segment_end: u32 = 0;
+    //println!("{:?}", matches);
 
-    let mut match_enumerator = matches.iter().enumerate();
-    for (q_start, &mapping) in match_enumerator {
+    for (q_start, &mapping) in matches.iter().enumerate() {
         let q_start: u32 = q_start as u32;
         let q_end: u32 = q_start + k;
 
         if q_start < last_segment_end {
-            println!(
-                "\t\tskipping {}-{}, {:?} (last q_end: {})",
-                q_start, q_end, mapping, last_segment_end
-            );
+            //println!(
+            //    "\t\tskipping {}-{}, {:?} (last q_end: {})",
+            //    q_start, q_end, mapping, last_segment_end
+            //);
             continue;
         }
 
         let segment: Option<A> = match mapping {
             Some(0) => {
                 // if this kmer matches the reference ambiguously
-                unimplemented!()
+                //unimplemented!()
+                None
             }
             Some(r_pos) => {
                 // if this kmer matches the reference uniquely
@@ -145,16 +146,16 @@ pub fn merge_segments<A: QuasiAlignment + Debug>(matches: Vec<Option<i32>>, k: u
             }
         };
 
-        println!("working alignment: {:?}", alignment);
-        println!("new segment:       {:?}", segment);
+        //println!("working alignment: {:?}", alignment);
+        //println!("new segment:       {:?}", segment);
 
         match (&mut alignment, &segment) {
             (None, None) => {
-                println!("\t(no working alignment or segment)");
+                //println!("\t(no working alignment or segment)");
             }
             (Some(working_alignment), None) => {
                 // encountering a run of None, push alignment
-                println!("\tworking alignment but segment None");
+                //println!("\tworking alignment but segment None");
                 last_segment_end = working_alignment.q_end();
                 alignments.push(working_alignment.clone());
                 alignment = None;
@@ -162,10 +163,10 @@ pub fn merge_segments<A: QuasiAlignment + Debug>(matches: Vec<Option<i32>>, k: u
             (Some(working_alignment), Some(current_segment)) => {
                 // decide whether to merge current segment into working alignment
                 if mergable(working_alignment, current_segment) {
-                    println!("\tmergable segment");
+                    //println!("\tmergable segment");
                     merge(working_alignment, current_segment);
                 } else {
-                    println!("\tnon-mergeable segment. new alignment");
+                    //println!("\tnon-mergeable segment. new alignment");
                     last_segment_end = working_alignment.q_end();
                     alignments.push(working_alignment.clone());
                     alignment = Some(current_segment.clone());
@@ -173,7 +174,7 @@ pub fn merge_segments<A: QuasiAlignment + Debug>(matches: Vec<Option<i32>>, k: u
             }
             (None, Some(current_segment)) => {
                 // initialize new working alignment from this segment
-                println!("\tNo working alignment, new segment");
+                //println!("\tNo working alignment, new segment");
                 alignment = Some(current_segment.clone());
             }
         }
@@ -181,10 +182,61 @@ pub fn merge_segments<A: QuasiAlignment + Debug>(matches: Vec<Option<i32>>, k: u
 
     // if there is a remaining working alignment, push it
     if let Some(remaining) = alignment {
-        println!("\tquery exhausted, pushing remaining working segment");
+        //println!("\tquery exhausted, pushing remaining working segment");
         alignments.push(remaining);
     }
     alignments
+}
+
+pub fn merge_contigs<A: QuasiAlignment + Debug>(unmerged: Vec<A>, gap_tolerance: u32) -> Vec<A> {
+    // Hardcoded tolerance thresholds for merging
+
+    let mut merged: Vec<A> = Vec::new();
+
+    for alignment in unmerged {
+        if merged.is_empty() {
+            // If the merged list is empty, add the first alignment
+            merged.push(alignment);
+        } else {
+            let last_alignment = merged.last_mut().unwrap();
+
+            // Check if the alignments are in the same direction
+            if last_alignment.forward() == alignment.forward() {
+                // Define how gap tolerance is calculated on the reference:
+                // reversed contigs will be chained by a2.r_start -> a1.r_end
+                let valid_ref_gap: bool = if alignment.forward() {
+                    (last_alignment.r_end() as i32 - alignment.r_start() as i32).abs()
+                        <= gap_tolerance as i32
+                } else {
+                    (last_alignment.r_start() as i32 - alignment.r_end() as i32).abs()
+                        <= gap_tolerance as i32
+                };
+
+                // Check if the alignments are continuous within the tolerance
+                if (last_alignment.q_end() as i32 - alignment.q_start() as i32).abs()
+                    <= gap_tolerance as i32
+                    && valid_ref_gap
+                {
+                    // Merge alignments
+                    if alignment.forward() {
+                        last_alignment.set_q_end(alignment.q_end());
+                        last_alignment.set_r_end(alignment.r_end());
+                    } else {
+                        last_alignment.set_q_end(alignment.q_end());
+                        last_alignment.set_r_start(alignment.r_start());
+                    }
+                } else {
+                    // Append alignment
+                    merged.push(alignment);
+                }
+            } else {
+                // Append alignment
+                merged.push(alignment);
+            }
+        }
+    }
+
+    merged
 }
 
 #[cfg(test)]
@@ -237,7 +289,7 @@ mod tests {
         ];
         let k = 5; // K-mer length is 5
         let alignments: Vec<Alignment> = merge_segments(kmer_map, k);
-        println!("{:?}", alignments);
+        //println!("{:?}", alignments);
         //assert_eq!(alignments.len(), 2);
         let a = &alignments[0];
         assert_eq!(
@@ -541,5 +593,58 @@ mod tests {
                 forward: false
             }
         );
+    }
+
+    #[test]
+    fn test_merge_contigs_basic() {
+        // Test the basic merging of two adjacent segments in the forward direction
+
+        // Create some mock alignments for testing
+        // Alignment(q_start, q_end, r_start, r_end, forward)
+        let a1 = Alignment::new(1, 10, 1, 10, true);
+        let a2 = Alignment::new(11, 20, 11, 20, true);
+
+        let unmerged = vec![a1.clone(), a2.clone()];
+
+        // Run the merge_contigs function
+        let merged = merge_contigs(unmerged, 2);
+
+        // Check the length of the merged alignments
+        assert_eq!(merged.len(), 1);
+
+        // Check the properties of the merged alignment
+        let m = &merged[0];
+        assert_eq!(m.q_start(), 1);
+        assert_eq!(m.q_end(), 20);
+        assert_eq!(m.r_start(), 1);
+        assert_eq!(m.r_end(), 20);
+        assert_eq!(m.forward(), true);
+    }
+
+    #[test]
+    fn test_merge_contigs_reverse() {
+        // Test the basic merging of two adjacent segments in the reverse direction
+
+        // Create some mock alignments for testing
+        // Alignment(q_start, q_end, r_start, r_end, forward)
+        let a1 = Alignment::new(1, 10, 11, 20, false);
+        let a2 = Alignment::new(11, 20, 1, 10, false);
+
+        let unmerged = vec![a1.clone(), a2.clone()];
+        let gap_tolerance = 1; // Set a tolerance of 1 base for merging gaps
+
+        // Run the merge_contigs function
+        let merged = merge_contigs(unmerged, gap_tolerance);
+
+        // Check the length of the merged alignments
+        assert_eq!(merged.len(), 1);
+
+        // Check the properties of the merged alignment
+        let m = &merged[0];
+        assert_eq!(m.q_start(), 1);
+        assert_eq!(m.q_end(), 20);
+        assert_eq!(m.r_start(), 1);
+        assert_eq!(m.r_end(), 20);
+        assert_eq!(m.forward(), false);
     }
 }
