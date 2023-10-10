@@ -37,6 +37,28 @@ impl<const K: usize> KmerMap<K> {
         }
     }
 
+    pub fn contains(&self, seq: &SeqSlice<Dna>) -> bool {
+        if seq.len() != K {
+            panic!();
+        }
+
+        let kmer = Kmer::from(seq);
+        self.index.contains_key(&kmer)
+    }
+
+    pub fn matches(&self, seq: &SeqSlice<Dna>) -> (u32, u32) {
+        let mut matches = 0;
+        let mut total = 0;
+
+        for kmer in seq.kmers() {
+            if self.index.contains_key(&kmer) {
+                matches += 1;
+            }
+            total += 1;
+        }
+        (matches, total)
+    }
+
     pub fn match_kmers(&self, seq: &SeqSlice<Dna>) -> Vec<Option<i32>> {
         let mut mapping: Vec<Option<i32>> = Vec::new();
 

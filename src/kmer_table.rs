@@ -38,7 +38,7 @@ where
     f64: From<E>,
 {
     fn add(&mut self, kmer: Kmer<Dna, K>) {
-        let entry = self.index.entry(kmer).or_insert(E::default());
+        let entry = self.index.entry(kmer).or_default();
         entry.add_assign(E::from(1u8));
         self.total += 1;
     }
