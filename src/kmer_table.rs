@@ -6,7 +6,7 @@ use petgraph::visit::GraphBase;
 //use bio_seq::kmer::KmerIter;
 use bio_seq::prelude::*;
 
-use crate::{Debruijn, Edge, GenomeGraph};
+use crate::{graph, Debruijn, Edge, GenomeGraph};
 
 #[derive(Clone)]
 pub struct KmerTable<E: Edge, const K: usize> {
@@ -33,7 +33,7 @@ impl<'a, E: Edge, const K: usize> GraphRef for &'a KmerTable<E, K> {
 }
 */
 
-impl<E: Edge + AddAssign, const K: usize> Debruijn<K> for KmerTable<E, K>
+impl<E: Edge + AddAssign, const K: usize> GenomeGraph for KmerTable<E, K>
 where
     f64: From<E>,
 {
@@ -46,11 +46,25 @@ where
     fn walk(&self, _start: Kmer<Dna, K>) {
         unimplemented!()
     }
+}
 
-    fn compress(&self) -> GenomeGraph {
+impl<E: Edge + AddAssign, const K: usize> Debruijn<K> for KmerTable<E, K>
+where
+    f64: From<E>,
+{
+    fn compress(&self) -> graph::HashGraph {
         unimplemented!()
     }
 
+    fn eulerian(&self) -> bool {
+        unimplemented!()
+    }
+}
+
+impl<E: Edge + AddAssign, const K: usize> KmerTable<E, K>
+where
+    f64: From<E>,
+{
     fn entropy(&self) -> f64 {
         let mut h: f64 = 0.0;
         let mut t: f64 = 0.0;

@@ -8,7 +8,7 @@ use petgraph::visit::{
 use bio_seq::kmer::KmerIter;
 use bio_seq::prelude::*;
 
-use crate::{Debruijn, Edge, GenomeGraph};
+use crate::{Debruijn, Edge, GenomeGraph, graph};
 
 #[derive(Clone)]
 pub struct KmerArray<E: Edge, const K: usize> {
@@ -82,10 +82,7 @@ impl<E: Edge, const K: usize> Default for KmerArray<E, K> {
     }
 }
 
-impl<E: Edge + AddAssign<E>, const K: usize> Debruijn<K> for KmerArray<E, K>
-where
-    f64: From<E>,
-{
+impl<E: Edge + AddAssign<E>, const K: usize> GenomeGraph for KmerArray<E, K> {
     fn add(&mut self, kmer: Kmer<Dna, K>) {
         self.index[usize::from(kmer)].add_assign(E::from(1u8));
         self.total += 1;
@@ -94,14 +91,28 @@ where
     fn walk(&self, _start: Kmer<Dna, K>) {
         unimplemented!()
     }
+}
 
-    fn compress(&self) -> GenomeGraph {
+impl<E: Edge + AddAssign<E>, const K: usize> Debruijn<K> for KmerArray<E, K>
+where
+    f64: From<E>,
+{
+    fn compress(
+        &self,
+    ) -> graph::HashGraph
+    {
         unimplemented!()
         //        let start: SeqSlice<Dna> = node.heads();
         //let g: GenomeGraph = GenomeGraph::default();
         //g
     }
 
+    fn eulerian(&self) -> bool {
+        unimplemented!()
+    }
+}
+
+impl<E: Edge + AddAssign<E>, const K: usize> KmerArray<E, K> {
     fn entropy(&self) -> f64 {
         let mut h: f64 = 0.0;
         let t: f64 = self.total as f64;
