@@ -1,5 +1,5 @@
 use core::fmt::Debug;
-use hashbrown::HashMap;
+use std::collections::HashMap;
 
 use bio_seq::prelude::*;
 

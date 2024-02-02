@@ -1,54 +1,44 @@
 pub mod alignment;
-mod kmer_array;
+//mod graph;
+//mod kmer_array;
 mod kmer_map;
-mod kmer_set;
-mod kmer_table;
+//mod kmer_set;
+//mod kmer_table;
 
 pub use alignment::{Alignment, QuasiAlign};
-pub use kmer_array::KmerArray;
+//pub use kmer_array::KmerArray;
 pub use kmer_map::KmerMap;
-pub use kmer_set::KmerSet;
-pub use kmer_table::KmerTable;
+//pub use kmer_set::KmerSet;
+//pub use kmer_table::KmerTable;
 
-use petgraph::visit::GraphBase;
+//use petgraph::visit::{GraphBase, IntoEdgeReferences};
 
-//use bio_seq::kmer::KmerIter;
 use bio_seq::prelude::*;
 
-pub struct GenomeGraph;
-
-impl Default for GenomeGraph {
-    fn default() -> Self {
-        Self
-    }
-}
-
-pub trait Edge: Default + Copy + PartialEq + Clone + From<u8> {}
+pub trait Edge: Default + Copy + PartialEq + Clone + From<bool> {}
 
 impl Edge for u32 {}
 impl Edge for u16 {}
 impl Edge for u8 {}
+impl Edge for usize {}
+impl Edge for bool {}
 
-pub trait Debruijn<const K: usize>: GraphBase {
-    fn add(&mut self, kmer: Kmer<Dna, K>);
-    fn walk(&self, start: Kmer<Dna, K>);
-    fn compress(&self) -> GenomeGraph;
-    fn entropy(&self) -> f64;
-    fn kld(&self, other: &Self) -> f64;
+//pub struct Path<'a, G: GenomeGraph> {
+//    graph: &'a G,
+//    edges: Vec<G::EdgeRef>,
+//}
+
+//pub trait GenomeGraph: GraphBase + IntoEdgeReferences {
+//    fn add(&mut self, seq: &SeqSlice<Dna>);
+//    fn walk(&self, start: Self::NodeId) -> Path<Self>;
+//}
+
+//pub trait Debruijn<const K: usize>: GenomeGraph {
+//    fn compress(&self) -> graph::HashGraph;
+//    fn eulerian(&self) -> bool;
+//}
+
+pub trait RankSelect {
+    fn rank(reference: &SeqSlice<Dna>, query: &SeqSlice<Dna>) -> usize;
+    fn select(reference: &SeqSlice<Dna>, query: &SeqSlice<Dna>, rank: usize) -> usize;
 }
-
-/*
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use bio_seq::prelude::*;
-
-    #[test]
-    fn from_contig() {
-        let seq: Seq<Dna> = dna!("AAAAAAAAAAAAAAAAATAAAGAAAAAAAAAAT");
-        let debg: DeBruijn<Dna, 6, usize> = DeBruijn::from_seq(&seq);
-        debg.dump();
-        assert!(false);
-    }
-}
-*/
