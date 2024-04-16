@@ -1,11 +1,12 @@
 use core::fmt::Debug;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use bio_seq::prelude::*;
 
 use crate::alignment;
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct KmerMap<const K: usize> {
     pub index: HashMap<Kmer<Dna, K>, i32>,
     pub len: u32,

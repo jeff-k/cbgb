@@ -13,6 +13,7 @@ pub trait QuasiAlignment: Clone {
     fn set_r_start(&mut self, r_start: u32);
     fn set_r_end(&mut self, r_end: u32);
     fn set_forward(&mut self, forward: bool);
+    fn indel(&self) -> i32;
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -73,6 +74,12 @@ impl QuasiAlignment for Alignment {
 
     fn set_forward(&mut self, forward: bool) {
         self.forward = forward;
+    }
+
+    fn indel(&self) -> i32 {
+        ((self.r_end - self.r_start) - (self.q_end - self.q_start))
+            .try_into()
+            .unwrap()
     }
 }
 

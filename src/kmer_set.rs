@@ -1,4 +1,4 @@
-use hashbrown::HashSet;
+use std::collections::HashSet;
 
 use bio_seq::prelude::*;
 
@@ -18,6 +18,20 @@ impl<const K: usize> Default for KmerSet<K> {
 }
 
 impl<const K: usize> KmerSet<K> {
+    pub fn new(seq: &SeqSlice<Dna>) -> Self {
+        let mut index: HashSet<Kmer<Dna, K>> = HashSet::new();
+
+        for kmer in seq.kmers() {
+            index.insert(kmer);
+        }
+
+        for kmer in seq.revcomp().kmers() {
+            index.insert(kmer);
+        }
+
+        KmerSet { index }
+    }
+
     pub fn contains(&self, kmer: Kmer<Dna, K>) -> bool {
         self.index.contains(&kmer)
     }
