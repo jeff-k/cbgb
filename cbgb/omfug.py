@@ -7,7 +7,9 @@ from scipy.sparse.csgraph import laplacian
 from scipy.special import gammaln
 from cbgb import kmerise
 
-def perplexity4(seq, k=12):
+type Seq = str
+
+def perplexity4(seq: Seq, k: int = 12) -> float:
     """in theory the base4-perplexity should suggest the best kmer size(?)
     """
     kmers = {}

@@ -1,15 +1,20 @@
+from typing import Generator, Any
 import numpy as np
 
 """sliding slices for strings of length k
 """
-def kmerise(seq: str, k: int =12) -> Generator[str]:
+
+Seq = str
+Monoid = Any
+
+def kmerise(seq: Seq, k: int = 12) -> Generator[Seq, None, None]:
     for i in range(0, len(seq) - (k - 1)):
         yield seq[i:i+k]
 
 class Edge:
     """example of monoidal edge; must implement addition and unit
     """
-    def __init__(self, data: Any = None):
+    def __init__(self, data: Monoid = None):
         """__init__() should return unit edge
         """
         self.data = data
@@ -53,7 +58,7 @@ class LMG:
         return f"<{s}>"
 
 
-def label(graph, colour):
+def label(graph: LMG, colour: Any) -> None:
     """colour all edges of a graph the same way
     """
     any(map(lambda e: LMG(e, label=colour), graph.nodes.values))
@@ -62,7 +67,7 @@ def label(graph, colour):
 class CdB:
     """main character
     """
-    def __init__(self, kmers: Optional[Generator[str]] = None):
+    def __init__(self, kmers: Generator[Seq, None, None] | None):
         self.nodes = {}
 
         if kmers:
@@ -81,7 +86,7 @@ class CdB:
         else:
             self.edges[(left, right)].update(edge)
 
-    def walk(self, start: Optional[str] = None) -> Generator[str]:
+    def walk(self, start: Seq | None) -> Generator[Seq, None, None]:
         """eulerian walk!
         """
         path = [] # the path of edges
@@ -102,7 +107,7 @@ class CdB:
         visit(start)
         return reversed(node_path)
 
-    def compress(self):
+    def compress(self) -> GenGraph:
         """concatenate nodes which have outdegree of one with their neighbours,
         yielding a genome reference graph
         """
@@ -135,7 +140,7 @@ class CdB:
 
         return np.array(rows), node_order
 
-    def to_dot(self):
+    def to_dot(self) -> str:
         dot = ['digraph G {']
         for v in self.nodes:
             for e in self.nodes[v]:
@@ -220,7 +225,7 @@ class GenGraph:
         for node in self.nodes:
             print(f'{names.index(node)}, "{node}"', file=csv_fd)
 
-    def to_dot(self):
+    def to_dot(self) -> str:
         dot = ['digraph G {']
         for v in self.nodes:
             for e in self.nodes[v]:
