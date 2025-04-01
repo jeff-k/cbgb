@@ -24,7 +24,7 @@ impl<const K: usize> KmerMap<K> {
                 index.insert(kmer, pos as i32 + 1);
             }
         }
-        for (pos, kmer) in seq.revcomp().kmers().enumerate() {
+        for (pos, kmer) in seq.to_revcomp().kmers().enumerate() {
             if let Some(v) = index.get_mut(&kmer) {
                 *v = 0;
             } else {
@@ -43,8 +43,11 @@ impl<const K: usize> KmerMap<K> {
             panic!();
         }
 
-        let kmer = Kmer::from(seq);
-        self.index.contains_key(&kmer)
+        if let Ok(kmer) = Kmer::try_from(seq) {
+            self.index.contains_key(&kmer)
+        } else {
+            false
+        }
     }
 
     pub fn matches(&self, seq: &SeqSlice<Dna>) -> (u32, u32) {

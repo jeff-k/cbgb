@@ -25,7 +25,7 @@ impl<const K: usize> KmerSet<K> {
             index.insert(kmer);
         }
 
-        for kmer in seq.revcomp().kmers() {
+        for kmer in seq.to_revcomp().kmers() {
             index.insert(kmer);
         }
 

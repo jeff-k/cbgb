@@ -1,10 +1,11 @@
 [package]
 name = "cbgb"
-version = "0.2.1"
-edition = "2021"
+version = "0.3.1"
+edition = "2024"
 
 [dependencies]
-bio-seq = { path="../bio-seq/bio-seq", features = ["serde"] }
+#bio-seq = { path="../bio-seq/bio-seq", features = ["serde"] }
+bio-seq = { version="0.14", features=["serde"]}
 serde = { version = "1" }
 #bincode = "1"
-#petgraph = "0.6"
+petgraph = "0.7"
